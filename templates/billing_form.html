@@ -1,0 +1,130 @@
+{% extends "base_layout.html" %}
+{% block title %}Create Invoice{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-file-invoice" style="color: #1a73e8; margin-right: 10px;"></i>Generate Invoice</h2>
+    <a href="{{ url_for('billing') }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
+    <form action="{{ url_for('billing_new') }}" method="POST">
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+            <div class="grid-form">
+                <div class="form-group">
+                    <label>Select Patient *</label>
+                    <select name="patient_id" id="patient_select" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required onchange="fetchPatientData()">
+                        <option value="" disabled selected>-- Select Patient --</option>
+                        {% for p in patients %}<option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name }} ({{ p.registration_number }})</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group"><label>Patient Reg No.</label><input type="text" id="auto_reg" style="width: 100%; padding: 8px; background: #e8eaed; border: 1px solid #ccc;" readonly></div>
+                <div class="form-group"><label>Age / Gender</label><input type="text" id="auto_demog" style="width: 100%; padding: 8px; background: #e8eaed; border: 1px solid #ccc;" readonly></div>
+                <div class="form-group"><label>Invoice Date *</label><input type="date" name="invoice_date" id="inv_date" style="width: 100%; padding: 8px; border: 1px solid #ccc;" required></div>
+                <div class="form-group">
+                    <label>Physician</label>
+                    <select name="physician_name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="" disabled selected>-- Select Provider --</option>
+                        {% for ph in physicians %}<option value="{{ ph.first_name }} {{ ph.last_name }}">Dr. {{ ph.first_name }} {{ ph.last_name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Link to Visit Date</label>
+                    <select name="visit_date" id="visit_dropdown" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">-- Select Patient First --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <h4 style="color: var(--text-dark); margin-bottom: 10px;">Billing Particulars</h4>
+        <div style="overflow-x: auto;">
+            <table class="compact-table" id="itemsTable" style="border: 1px solid var(--border-color); background: #fff; min-width: 1000px;">
+                <thead style="background: #e8f0fe;"><tr><th>Category</th><th>Description</th><th>Qty</th><th>Unit Price (₹)</th><th>Discount (₹)</th><th>Tax (₹)</th><th>Total (₹)</th><th></th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><select name="cat[]"><option value="OPD Consultation">OPD Consultation</option><option value="Day Care Admin">Day Care Admin</option><option value="Chemotherapy">Chemotherapy</option><option value="Pharmacy/Drugs">Pharmacy/Drugs</option><option value="Pathology">Pathology</option><option value="Radiology">Radiology</option><option value="Surgery">Surgery</option><option value="Other">Other</option></select></td>
+                        <td><input type="text" name="desc[]" placeholder="Description"></td>
+                        <td><input type="number" name="qty[]" value="1" min="1" class="calc-trigger" oninput="calcTotals()"></td>
+                        <td><input type="number" name="price[]" value="0" step="0.01" class="calc-trigger" oninput="calcTotals()"></td>
+                        <td><input type="number" name="disc[]" value="0" step="0.01" class="calc-trigger" oninput="calcTotals()"></td>
+                        <td><input type="number" name="tax[]" value="0" step="0.01" class="calc-trigger" oninput="calcTotals()"></td>
+                        <td><input type="text" name="total[]" class="row-total" value="0.00" readonly style="background: #f8f9fa; font-weight: bold;"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <button type="button" onclick="addItemRow()" style="margin-top: 10px; font-size: 0.85rem;">+ Add Line Item</button>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 30px;">
+            <div style="width: 300px; background: #f8f9fa; padding: 20px; border: 1px solid var(--border-color); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><strong>Subtotal:</strong> <input type="text" name="subtotal" id="sum_sub" value="0.00" readonly style="width: 100px; text-align: right; border:none; background:transparent;"></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><strong>Total Discount:</strong> <input type="text" name="discount_total" id="sum_disc" value="0.00" readonly style="width: 100px; text-align: right; border:none; background:transparent;"></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px;"><strong>Total Tax:</strong> <input type="text" name="tax_total" id="sum_tax" value="0.00" readonly style="width: 100px; text-align: right; border:none; background:transparent;"></div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.2rem; color: #1a73e8;"><strong>Grand Total:</strong> <input type="text" name="grand_total" id="sum_grand" value="0.00" readonly style="width: 120px; text-align: right; border:none; background:transparent; font-weight: bold; color: #1a73e8;"></div>
+            </div>
+        </div>
+
+        <div style="text-align: center; border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+            <button type="submit" class="btn-primary" style="font-size: 1.1rem; padding: 12px 30px;"><i class="fa-solid fa-file-invoice"></i> Generate Invoice</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate today's date adjusted for local timezone
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+        
+        let invDateInput = document.getElementById('inv_date');
+        invDateInput.value = todayLocal;
+        invDateInput.setAttribute('max', todayLocal); // Prevents future dates
+    });
+
+    async function fetchPatientData() {
+        let pid = document.getElementById('patient_select').value;
+        if(!pid) return;
+        let response = await fetch(`/api/patient/${pid}/billing_info`);
+        let data = await response.json();
+        
+        document.getElementById('auto_reg').value = data.reg_no;
+        document.getElementById('auto_demog').value = `${data.age} Y / ${data.gender}`;
+        
+        let visitDrop = document.getElementById('visit_dropdown');
+        visitDrop.innerHTML = '<option value="">-- Optional: Link to Visit --</option>';
+        data.visits.forEach(v => { visitDrop.innerHTML += `<option value="${v}">${v}</option>`; });
+    }
+
+    function calcTotals() {
+        let rows = document.getElementById('itemsTable').getElementsByTagName('tbody')[0].rows;
+        let subtotal = 0, totDisc = 0, totTax = 0, grand = 0;
+        
+        for(let i=0; i<rows.length; i++) {
+            let qty = parseFloat(rows[i].querySelector('input[name="qty[]"]').value) || 0;
+            let price = parseFloat(rows[i].querySelector('input[name="price[]"]').value) || 0;
+            let disc = parseFloat(rows[i].querySelector('input[name="disc[]"]').value) || 0;
+            let tax = parseFloat(rows[i].querySelector('input[name="tax[]"]').value) || 0;
+            
+            let base = qty * price;
+            let rowTot = base - disc + tax;
+            rows[i].querySelector('.row-total').value = rowTot.toFixed(2);
+            
+            subtotal += base; totDisc += disc; totTax += tax; grand += rowTot;
+        }
+        document.getElementById('sum_sub').value = subtotal.toFixed(2);
+        document.getElementById('sum_disc').value = totDisc.toFixed(2);
+        document.getElementById('sum_tax').value = totTax.toFixed(2);
+        document.getElementById('sum_grand').value = grand.toFixed(2);
+    }
+
+    function addItemRow() {
+        let tbody = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+        let r = tbody.insertRow();
+        r.innerHTML = `<td><select name="cat[]"><option value="OPD Consultation">OPD Consultation</option><option value="Day Care Admin">Day Care Admin</option><option value="Chemotherapy">Chemotherapy</option><option value="Pharmacy/Drugs">Pharmacy/Drugs</option><option value="Pathology">Pathology</option><option value="Radiology">Radiology</option><option value="Surgery">Surgery</option><option value="Other">Other</option></select></td><td><input type="text" name="desc[]" placeholder="Description"></td><td><input type="number" name="qty[]" value="1" min="1" oninput="calcTotals()"></td><td><input type="number" name="price[]" value="0" step="0.01" oninput="calcTotals()"></td><td><input type="number" name="disc[]" value="0" step="0.01" oninput="calcTotals()"></td><td><input type="number" name="tax[]" value="0" step="0.01" oninput="calcTotals()"></td><td><input type="text" name="total[]" class="row-total" value="0.00" readonly style="background: #f8f9fa; font-weight: bold;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+    }
+    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); calcTotals(); }
+</script>
+{% endblock %}

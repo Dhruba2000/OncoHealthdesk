@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - {{ invoice.invoice_number }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
+        
+        /* Print Header Styling */
+        .clinic-header { text-align: center; border-bottom: 2px solid #1a73e8; padding-bottom: 20px; margin-bottom: 30px; }
+        .clinic-header h1 { font-size: 28px; font-weight: 700; color: #000; margin: 0 0 10px 0; }
+        .clinic-header p { margin: 0; font-size: 14px; color: #555; line-height: 1.4; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; color: #333; font-weight: 600; }
+        .text-right { text-align: right; }
+        
+        .totals-box { width: 300px; float: right; margin-bottom: 30px; }
+        .totals-row { display: flex; justify-content: space-between; padding: 5px 0; }
+        .grand-total { font-size: 18px; font-weight: bold; color: #1a73e8; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 5px; }
+        
+        .clear { clear: both; }
+        .btn { display: inline-block; padding: 10px 20px; text-decoration: none; border-radius: 4px; cursor: pointer; font-weight: 500; border: none; font-size: 14px; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-success { background: #0f9d58; color: white; }
+        
+        /* Payment Section (Hidden on Print) */
+        .payment-section { background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #ddd; margin-top: 30px; }
+        
+        /* Footer styling */
+        .print-footer { display: none; text-align: center; font-size: 12px; color: #777; margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .no-print { display: none !important; }
+            .print-footer { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <a href="{{ url_for('billing') }}" style="color: #666; text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        <div>
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Print Invoice PDF</button>
+        </div>
+    </div>
+
+    <div class="clinic-header">
+        <h1>BB Precision Oncocare Centre</h1>
+        <p>Adani Inspire Hub, Metro Station D N Nagar, 117, JP Rd<br>Sahayog Nagar, Bhudargarh Colony, Andheri West, Mumbai, Maharashtra 400053</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 15px;">
+        <div>
+            <p style="margin:0 0 5px 0; color: #777;"><strong>Billed To:</strong></p>
+            <p style="margin:0; font-size: 18px; font-weight: 600;">{{ invoice.patient.first_name }} {{ invoice.patient.last_name }}</p>
+            <p style="margin:5px 0 0 0;">Reg No: {{ invoice.patient.registration_number }}</p>
+            <p style="margin:5px 0 0 0;">Age/Gender: {{ invoice.patient.age }}Y / {{ invoice.patient.gender }}</p>
+        </div>
+        <div style="text-align: right;">
+            <h2 style="margin: 0 0 5px 0; color: #1a73e8;">INVOICE</h2>
+            <p style="margin:0;"><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+            <p style="margin:5px 0 0 0;"><strong>Date:</strong> {{ invoice.invoice_date.strftime('%d-%b-%Y') }}</p>
+            <p style="margin:5px 0 0 0;"><strong>Provider:</strong> Dr. {{ invoice.physician_name }}</p>
+            {% if invoice.visit_date %}<p style="margin:5px 0 0 0;"><strong>Visit Ref:</strong> {{ invoice.visit_date }}</p>{% endif %}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Category</th><th>Description</th><th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Total</th></tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ item.category }}</td>
+                <td>{{ item.description }}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">₹{{ "%.2f"|format(item.unit_price) }}</td>
+                <td class="text-right">₹{{ "%.2f"|format(item.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-box">
+        <div class="totals-row"><span>Subtotal:</span> <span>₹{{ "%.2f"|format(invoice.subtotal) }}</span></div>
+        <div class="totals-row"><span>Discount:</span> <span>- ₹{{ "%.2f"|format(invoice.discount_total) }}</span></div>
+        <div class="totals-row"><span>Tax:</span> <span>+ ₹{{ "%.2f"|format(invoice.tax_total) }}</span></div>
+        <div class="totals-row grand-total"><span>Grand Total:</span> <span>₹{{ "%.2f"|format(invoice.grand_total) }}</span></div>
+        
+        <div class="totals-row" style="margin-top: 15px; color: #0f9d58;"><span>Amount Received:</span> <span>₹{{ "%.2f"|format(invoice.amount_paid) }}</span></div>
+        <div class="totals-row" style="font-weight: bold; color: #d93025; font-size: 16px;"><span>Balance Due:</span> <span>₹{{ "%.2f"|format(invoice.grand_total - invoice.amount_paid) }}</span></div>
+    </div>
+    <div class="clear"></div>
+
+    <div class="print-footer">
+        Invoice created using Onco HealthDesk on <span id="sys_date"></span>
+    </div>
+
+    <div class="payment-section no-print">
+        <h3 style="margin-top: 0;"><i class="fa-solid fa-wallet" style="color: #0f9d58; margin-right: 8px;"></i> Payment Gateway</h3>
+        
+        {% if invoice.payments %}
+        <table style="background: #fff;">
+            <thead style="background: #e6f4ea;"><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Txn ID</th><th>Logged By</th></tr></thead>
+            <tbody>
+                {% for p in invoice.payments %}<tr><td>{{ p.payment_date.strftime('%d-%b-%Y') }}</td><td>₹{{ "%.2f"|format(p.amount) }}</td><td>{{ p.mode }}</td><td>{{ p.transaction_id }}</td><td>{{ p.created_by }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if invoice.status != 'Paid' %}
+        <form action="{{ url_for('billing_view', invoice_id=invoice.id) }}" method="POST" style="display: flex; gap: 10px; align-items: flex-end; margin-top: 15px;">
+            <div><label style="display:block; font-size:12px; margin-bottom:5px;">Payment Date</label><input type="date" name="pay_date" id="p_date" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required></div>
+            <div><label style="display:block; font-size:12px; margin-bottom:5px;">Amount (₹)</label><input type="number" name="pay_amount" step="0.01" max="{{ invoice.grand_total - invoice.amount_paid }}" value="{{ invoice.grand_total - invoice.amount_paid }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required></div>
+            <div><label style="display:block; font-size:12px; margin-bottom:5px;">Mode</label><select name="pay_mode" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"><option value="Cash">Cash</option><option value="Credit/Debit Card">Card</option><option value="UPI">UPI</option><option value="Insurance/TPA">Insurance/TPA</option><option value="Bank Transfer">Bank Transfer</option></select></div>
+            <div><label style="display:block; font-size:12px; margin-bottom:5px;">Txn ID (Optional)</label><input type="text" name="pay_txn" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+            <button type="submit" class="btn btn-success">Log Payment</button>
+        </form>
+        {% else %}
+        <div style="background: #e6f4ea; color: #137333; padding: 15px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 16px;">
+            <i class="fa-solid fa-circle-check"></i> Invoice is Fully Paid
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('sys_date').innerText = new Date().toLocaleString();
+    if(document.getElementById('p_date')) document.getElementById('p_date').valueAsDate = new Date();
+</script>
+</body>
+</html>

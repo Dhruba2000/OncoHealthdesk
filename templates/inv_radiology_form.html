@@ -1,0 +1,46 @@
+{% extends "base_layout.html" %}
+{% block title %}Log Radiology{% endblock %}
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-x-ray" style="color: var(--primary-accent); margin-right: 10px;"></i>Log Radiology</h2>
+    <a href="{{ url_for('inv_radiology', patient_id=patient.id) }}" class="btn-secondary">Cancel</a>
+</div>
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto;">
+    <form action="{{ url_for('inv_radiology_new', patient_id=patient.id) }}" method="POST" enctype="multipart/form-data">
+        <table class="data-table" id="radTable" style="background: #fff; border: 1px solid var(--border-color); min-width: 1000px;">
+            <thead><tr style="background: #f8f9fa;"><th>Date</th><th>Test Name</th><th>Organs Examined</th><th>Result</th><th>Comment</th><th>File / Camera</th><th></th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><input type="date" name="r_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="r_test[]" placeholder="CT, MRI" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="r_organ[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="r_result[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="r_comm[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="file" name="r_file_0" accept=".pdf,image/*" capture="environment" style="width:100%; padding:4px;"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addRadRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
+        <div style="margin-top: 30px; text-align: center;"><button type="submit" class="btn-primary" style="width: 100%; max-width: 300px;"><i class="fa-solid fa-cloud-arrow-up"></i> Save & Upload</button></div>
+    </form>
+</div>
+<script>
+    // Universal Date Restrictor
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.type === 'date') {
+            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            e.target.setAttribute('max', todayLocal);
+        }
+    });
+
+    let r_idx = 1;
+    function addRadRow() {
+        let row = document.getElementById('radTable').getElementsByTagName('tbody')[0].insertRow();
+        row.innerHTML = `<td><input type="date" name="r_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="r_test[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="r_organ[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="r_result[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="r_comm[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="file" name="r_file_${r_idx}" accept=".pdf,image/*" capture="environment" style="width:100%; padding:4px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+        r_idx++;
+    }
+    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); }
+</script>
+{% endblock %}

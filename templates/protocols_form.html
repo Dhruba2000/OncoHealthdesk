@@ -1,0 +1,201 @@
+{% extends "base_layout.html" %}
+{% block title %}{% if proto %}Edit{% else %}Create{% endif %} Protocol{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-file-circle-plus" style="color: #0f9d58; margin-right: 10px;"></i>{% if proto %}Edit Master Protocol: {{ proto.name }}{% else %}Build Master Protocol{% endif %}</h2>
+    <a href="{{ url_for('protocols_master') }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
+    <form action="{% if proto %}{{ url_for('protocols_edit', proto_id=proto.id) }}{% else %}{{ url_for('protocols_new') }}{% endif %}" method="POST" enctype="multipart/form-data">
+        
+        <h3 class="form-section-title" style="color: #0f9d58; border-bottom: 2px solid #e6f4ea;"><i class="fa-solid fa-list-check"></i> Part 1: Core Definitions</h3>
+        <div class="grid-form" style="margin-bottom: 20px;">
+            <div class="form-group"><label>Protocol / Regimen Name *</label><div class="input-with-icon"><i class="fa-solid fa-file-prescription"></i><input type="text" name="name" value="{{ proto.name if proto else '' }}" required></div></div>
+            <div class="form-group">
+                <label>Intent *</label>
+                <div class="input-with-icon"><i class="fa-solid fa-bullseye"></i>
+                <select name="intent" required>
+                    <option value="" {% if not proto %}selected{% endif %} disabled>Select</option>
+                    <option value="Curative" {% if proto and proto.intent == 'Curative' %}selected{% endif %}>Curative</option>
+                    <option value="Palliative" {% if proto and proto.intent == 'Palliative' %}selected{% endif %}>Palliative</option>
+                </select></div>
+            </div>
+            
+            <div class="form-group"><label>Number of Cycles</label><div class="input-with-icon"><i class="fa-solid fa-rotate-right"></i><input type="number" name="num_cycles" value="{{ proto.num_cycles if proto else '' }}" min="1"></div></div>
+            <div class="form-group"><label>Days Between Cycles</label><div class="input-with-icon"><i class="fa-solid fa-calendar-day"></i><input type="number" name="days_between_cycles" id="days_between_cycles" value="{{ proto.days_between_cycles if proto else '' }}" min="1" oninput="generateDayOptions()"></div></div>
+            <div class="form-group full-width"><label>Pre-requisites</label><div class="input-with-icon"><i class="fa-solid fa-clipboard-check"></i><input type="text" name="prerequisites" value="{{ proto.prerequisites if proto else '' }}"></div></div>
+            
+            <div class="form-group">
+                <label>Assign Days of Administration</label>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Hold CTRL/CMD to select multiple days.</p>
+                <select name="assign_days" id="assign_days" multiple style="width: 100%; height: 100px; border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;" onchange="renderPart2Tables()"></select>
+            </div>
+            
+            <div class="form-group">
+                <label>Educational Material {% if proto and proto.edu_material %}<span style="color:#0f9d58;">(File exists)</span>{% endif %}</label>
+                <div class="input-with-icon"><i class="fa-solid fa-file-pdf"></i><input type="file" name="edu_material" accept=".pdf,.doc,.docx" style="padding: 6px;"></div>
+            </div>
+            
+            <div class="form-group full-width"><label>Discharge Instructions</label><textarea name="discharge_instructions" rows="2" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">{{ proto.discharge_instructions if proto else '' }}</textarea></div>
+            <div class="form-group full-width"><label>Cycle Notes</label><textarea name="cycle_notes" rows="2" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">{{ proto.cycle_notes if proto else '' }}</textarea></div>
+        </div>
+
+        <h4 style="color: var(--text-dark); margin-bottom: 10px;">Take Home Medications</h4>
+        <table class="compact-table" id="thmTable" style="margin-bottom: 30px; border: 1px solid var(--border-color);">
+            <thead style="background: #f8f9fa;"><tr><th>Dosage Form</th><th>Drug</th><th>Dose</th><th>Route</th><th>Frequency</th><th>No. Days</th><th></th></tr></thead>
+            <tbody>
+                </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addThmRow()" style="margin-bottom: 30px;"><i class="fa-solid fa-plus"></i> Add Medication</button>
+
+        <h3 class="form-section-title" style="color: #0f9d58; border-bottom: 2px solid #e6f4ea;"><i class="fa-solid fa-pills"></i> Part 2: Day-by-Day Administration Setup</h3>
+        <div id="part2_container"></div>
+
+        <div style="margin-top: 40px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button type="submit" class="btn-primary" style="background-color: #0f9d58; width: 100%; max-width: 400px; font-size: 1.1rem; padding: 12px;"><i class="fa-solid fa-save"></i> Save Protocol Master</button>
+        </div>
+    </form>
+</div>
+
+{% if proto %}
+<script id="edit_data" type="application/json">
+{
+    "assign_days": {{ proto.assign_days | safe }},
+    "take_home_meds": {{ proto.take_home_meds | safe }},
+    "day_drugs": {{ proto.day_drugs | safe }}
+}
+</script>
+{% endif %}
+
+<script>
+    function addThmRow(f='', d='', do_='', r='', fr='', ds='') {
+        let tr = document.getElementById('thmTable').getElementsByTagName('tbody')[0].insertRow();
+        tr.innerHTML = `<td><input type="text" name="thm_form[]" value="${f}"></td><td><input type="text" name="thm_drug[]" value="${d}"></td><td><input type="text" name="thm_dose[]" value="${do_}"></td><td><input type="text" name="thm_route[]" value="${r}"></td><td><input type="text" name="thm_freq[]" value="${fr}"></td><td><input type="text" name="thm_days[]" value="${ds}"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+    }
+    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); }
+
+    function generateDayOptions() {
+        let maxDays = parseInt(document.getElementById('days_between_cycles').value) || 0;
+        let select = document.getElementById('assign_days');
+        let currentSelections = Array.from(select.selectedOptions).map(opt => opt.value);
+        select.innerHTML = ''; 
+        for(let i=1; i<=maxDays; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.text = "Day " + i;
+            if(currentSelections.includes(i.toString())) opt.selected = true;
+            select.appendChild(opt);
+        }
+        renderPart2Tables();
+    }
+
+    function renderPart2Tables() {
+        let selectedDays = Array.from(document.getElementById('assign_days').selectedOptions).map(opt => opt.value);
+        let container = document.getElementById('part2_container');
+        let existingDays = Array.from(container.children).map(div => div.getAttribute('data-day'));
+        
+        selectedDays.forEach(day => {
+            if(!existingDays.includes(day)) {
+                let div = document.createElement('div');
+                div.setAttribute('data-day', day); div.id = 'day_container_' + day; div.style.marginBottom = "30px";
+                div.innerHTML = buildDayTableHTML(day);
+                container.appendChild(div);
+            }
+        });
+        
+        Array.from(container.children).forEach(div => { if(!selectedDays.includes(div.getAttribute('data-day'))) div.remove(); });
+        let divs = Array.from(container.children);
+        divs.sort((a,b) => parseInt(a.getAttribute('data-day')) - parseInt(b.getAttribute('data-day')));
+        divs.forEach(div => container.appendChild(div));
+    }
+    
+    function buildDayTableHTML(day) {
+        let copyBtn = (day != 1) ? `<button type="button" class="btn-secondary" onclick="copyFromDay1('${day}')" style="margin-left: 15px; color: #1a73e8;"><i class="fa-solid fa-copy"></i> Copy details from Day 1</button>` : '';
+        return `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <h4 style="color: #0f9d58; margin:0;"><i class="fa-solid fa-calendar-check"></i> Setup Regimen for: Day ${day}</h4>
+                ${copyBtn}
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="compact-table" id="table_day_${day}" style="border: 1px solid var(--border-color); min-width: 1100px; background: #fff;">
+                    <thead style="background: #e6f4ea;"><tr><th>Type</th><th>Dosage Form</th><th>Drug Name</th><th style="width: 140px;">Multiplier</th><th>Dose</th><th>Route</th><th>Diluent</th><th>Max Dose</th><th>Infusion Type</th><th>Note</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button type="button" class="btn-secondary" onclick="addDayRow('${day}')" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Drug</button>
+        </div>`;
+    }
+    
+    function addDayRow(day, t='Pre-medication', f='', n='', mul='BSA', auc='', d='', r='', dil='', mx='', inf='', no='') {
+        let table = document.getElementById('table_day_' + day).getElementsByTagName('tbody')[0];
+        let tr = table.insertRow();
+        
+        let s1 = (t=='Pre-medication')?'selected':''; let s2 = (t=='Chemo')?'selected':''; let s3 = (t=='Post-chemo')?'selected':'';
+        let m1 = (mul=='BSA')?'selected':''; let m2 = (mul=='AUC')?'selected':''; let m3 = (mul=='Per Kg')?'selected':''; let m4 = (mul=='Fixed')?'selected':'';
+        let aucStyle = (mul=='AUC') ? 'display:inline-block;' : 'display:none;';
+
+        tr.innerHTML = `
+            <td><select name="d_type_${day}[]"><option value="Pre-medication" ${s1}>Pre-medication</option><option value="Chemo" ${s2}>Chemo</option><option value="Post-chemo" ${s3}>Post-chemo</option></select></td>
+            <td><input type="text" name="d_form_${day}[]" value="${f}"></td>
+            <td><input type="text" name="d_name_${day}[]" value="${n}"></td>
+            <td>
+                <select name="d_multiplier_${day}[]" style="width:70px; margin-bottom: 4px;" onchange="this.nextElementSibling.style.display = (this.value === 'AUC') ? 'inline-block' : 'none';">
+                    <option value="BSA" ${m1}>BSA</option><option value="AUC" ${m2}>AUC</option>
+                    <option value="Per Kg" ${m3}>Per Kg</option><option value="Fixed" ${m4}>Fixed</option>
+                </select>
+                <input type="number" step="0.01" name="d_auc_${day}[]" value="${auc}" placeholder="AUC" style="width:60px; ${aucStyle}">
+            </td>
+            <td><input type="text" name="d_dose_${day}[]" value="${d}"></td>
+            <td><input type="text" name="d_route_${day}[]" value="${r}"></td>
+            <td><input type="text" name="d_diluent_${day}[]" value="${dil}"></td>
+            <td><input type="text" name="d_max_${day}[]" value="${mx}"></td>
+            <td><input type="text" name="d_infusion_${day}[]" value="${inf}"></td>
+            <td><input type="text" name="d_note_${day}[]" value="${no}"></td>
+            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 2px 6px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+    }
+
+    function copyFromDay1(targetDay) {
+        let t1 = document.getElementById('table_day_1');
+        if(!t1 || t1.getElementsByTagName('tbody')[0].rows.length === 0) { alert("Day 1 has no drugs to copy."); return; }
+        let targetBody = document.getElementById('table_day_' + targetDay).getElementsByTagName('tbody')[0];
+        targetBody.innerHTML = ''; // Clear target
+        let rows = t1.getElementsByTagName('tbody')[0].rows;
+        for(let i=0; i<rows.length; i++) {
+            let inputs = rows[i].querySelectorAll('input, select');
+            // Mapping exact fields from the row inputs
+            addDayRow(targetDay, inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value, inputs[4].value, inputs[5].value, inputs[6].value, inputs[7].value, inputs[8].value, inputs[9].value, inputs[10].value);
+        }
+    }
+
+    // PRE-FILL LOGIC FOR EDIT MODE
+    window.onload = function() {
+        let editScript = document.getElementById('edit_data');
+        if (editScript) {
+            generateDayOptions(); // populate dropdowns
+            let data = JSON.parse(editScript.textContent);
+            
+            // Re-select Assign Days
+            let sel = document.getElementById('assign_days');
+            for(let i=0; i<sel.options.length; i++) { if(data.assign_days.includes(sel.options[i].value)) sel.options[i].selected = true; }
+            renderPart2Tables();
+
+            // Populate Take Home Meds
+            if(data.take_home_meds.length > 0) {
+                data.take_home_meds.forEach(m => addThmRow(m.form, m.drug, m.dose, m.route, m.frequency, m.days));
+            } else { addThmRow(); }
+
+            // Populate Day Drugs
+            Object.keys(data.day_drugs).forEach(day => {
+                let drugs = data.day_drugs[day];
+                if(drugs.length > 0) {
+                    drugs.forEach(d => addDayRow(day, d.type, d.form, d.name, d.multiplier || 'BSA', d.auc || '', d.dose, d.route, d.diluent, d.max_dose, d.infusion, d.note));
+                } else { addDayRow(day); }
+            });
+        } else {
+            addThmRow(); // Default blank row
+        }
+    }
+</script>
+{% endblock %}

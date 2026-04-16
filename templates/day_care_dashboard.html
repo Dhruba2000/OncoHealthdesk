@@ -1,0 +1,64 @@
+{% extends "base_layout.html" %}
+{% block title %}Day Care Administration{% endblock %}
+
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-bed-pulse" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;"><strong>Reg No:</strong> {{ patient.registration_number }} | <strong>Diagnosis:</strong> {{ patient.primary_diagnosis }}</p>
+    </div>
+</div>
+
+{% if not active_protocol %}
+<div class="panel-card" style="text-align: center; padding: 40px; border: 2px dashed var(--primary-accent); background: #e8f0fe;">
+    <h3 style="color: var(--primary-accent); margin-bottom: 15px;"><i class="fa-solid fa-link"></i> Assign Chemotherapy Protocol</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">This patient does not have an active protocol assigned for Day Care.</p>
+    <form action="{{ url_for('day_care', patient_id=patient.id) }}" method="POST" style="display: flex; justify-content: center; gap: 10px;">
+        <select name="protocol_id" class="input-with-icon" style="width: 300px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+            <option value="" disabled selected>Select Master Protocol...</option>
+            {% for p in all_protocols %}<option value="{{ p.id }}">{{ p.name }} ({{ p.intent }})</option>{% endfor %}
+        </select>
+        <button type="submit" name="assign_protocol" class="btn-primary">Assign to Patient</button>
+    </form>
+</div>
+{% else %}
+
+<div class="panel-card" style="border-left: 4px solid #0f9d58;">
+    <div class="panel-header" style="margin-bottom: 10px;">
+        <h2>Active Regimen: <span style="color: #0f9d58;">{{ active_protocol.protocol.name }}</span></h2>
+        {% if next_cycle %}
+            <a href="{{ url_for('day_care_session', patient_id=patient.id, proto_id=active_protocol.id, cycle=next_cycle, day=next_day) }}" class="btn-primary" style="background: #0f9d58;">
+                <i class="fa-solid fa-play"></i> Start Cycle {{ next_cycle }}, Day {{ next_day }}
+            </a>
+        {% else %}
+            <span class="badge" style="background: #e6f4ea; color: #137333; font-size: 1rem; padding: 8px 15px;"><i class="fa-solid fa-check-double"></i> Protocol Complete</span>
+        {% endif %}
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+        <strong>Intent:</strong> {{ active_protocol.protocol.intent }} | <strong>Cycles:</strong> {{ active_protocol.protocol.num_cycles }} | <strong>Assigned Days:</strong> {{ active_protocol.protocol.assign_days | replace('["', '') | replace('"]', '') | replace('"', '') }}
+    </p>
+
+    <h4 style="margin-bottom: 10px;">Administration History</h4>
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead style="background: #f8f9fa;"><tr><th>Cycle / Day</th><th>Actual Date</th><th>Delayed?</th><th>Administered By</th><th>Discharge Summary</th></tr></thead>
+            <tbody>
+                {% for rec in active_protocol.records %}
+                <tr>
+                    <td style="font-weight: 600;">Cycle {{ rec.cycle_number }}, Day {{ rec.day_number }}</td>
+                    <td>{{ rec.actual_date.strftime('%d-%b-%Y') }}</td>
+                    <td>{% if rec.is_delayed == 'Yes' %}<span style="color: #d93025; font-weight: 500;">Yes ({{ rec.delay_reason }})</span>{% else %}No{% endif %}</td>
+                    <td>{{ rec.created_by }}</td>
+                    <td>
+                        <a href="{{ url_for('day_care_summary', patient_id=patient.id, record_id=rec.id) }}" target="_blank" class="btn-secondary" style="padding: 4px 10px;"><i class="fa-solid fa-file-pdf" style="color: #d93025;"></i> View Summary</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: #999; padding: 20px;">No sessions administered yet. Click Start to begin Cycle 1, Day 1.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

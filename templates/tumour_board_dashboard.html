@@ -1,0 +1,76 @@
+{% extends "base_layout.html" %}
+{% block title %}Tumour Board{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        @page { margin: 1cm; size: auto; }
+        body { background: #fff !important; }
+        .sidebar, .topbar, .main-footer, .no-print, .btn-primary { display: none !important; }
+        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; background: #fff !important; }
+        .content-scroll { overflow: visible !important; padding: 0 !important; height: auto !important; }
+        .panel-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+        .patient-banner { background: #f8f9fa !important; border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 25px !important; page-break-after: avoid; }
+        .patient-banner * { color: #000 !important; }
+        /* Style the meeting blocks for paper */
+        .meeting-block { border: 1px solid #ccc !important; margin-bottom: 30px !important; page-break-inside: avoid; }
+        .meeting-header { background: #eee !important; color: #000 !important; border-bottom: 1px solid #ccc !important; }
+        div[style*="grid-template-columns: 1fr 1fr"] { display: block !important; }
+        div[style*="grid-template-columns: 1fr 1fr"] > div { margin-bottom: 15px !important; border: 1px solid #ccc !important; }
+    }
+</style>
+
+<div class="no-print" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+    <button onclick="window.print()" class="btn-primary" style="background-color: #d93025; border-color: #d93025;"><i class="fa-solid fa-file-pdf"></i> Save History as PDF</button>
+</div>
+
+<div class="patient-banner" style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3 style="margin:0 0 10px 0; font-size: 1.4rem; color: #673ab7;"><i class="fa-solid fa-users-viewfinder" style="margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin: 0; font-size: 0.95rem; color: #555;"><strong>Reg No:</strong> {{ patient.registration_number }} &nbsp;|&nbsp; <strong>Diagnosis:</strong> {{ patient.primary_diagnosis }}</p>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Tumour Board Meetings Archive</h2>
+        <a href="{{ url_for('tumour_board_new', patient_id=patient.id) }}" class="btn-primary" style="background: #673ab7; border-color: #673ab7;"><i class="fa-solid fa-plus"></i> Initiate Board Review</a>
+    </div>
+
+    <div style="margin-top: 15px;">
+        {% for rec in records %}
+        <div class="meeting-block" style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+            <div class="meeting-header" style="background: #f3e5f5; padding: 12px 20px; border-bottom: 1px solid #e1bee7; display: flex; justify-content: space-between;">
+                <strong style="color: #4a148c;"><i class="fa-solid fa-calendar-day" style="margin-right: 8px;"></i> Meeting Date: {{ rec.date.strftime('%d-%b-%Y') }}</strong>
+                <span style="color: #6a1b9a; font-size: 0.85rem;">Logged by: {{ rec.author }}</span>
+            </div>
+            
+            <div style="padding: 20px;">
+                <h4 style="margin-bottom: 10px; color: var(--text-dark);"><i class="fa-solid fa-user-doctor"></i> Participating Board Members</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                    {% for m in rec.members %}
+                        <span class="badge badge-grey" style="font-size: 0.85rem;"><strong>{{ m.name }}</strong> ({{ m.specialty }})</span>
+                    {% endfor %}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="background: #fafafa; padding: 15px; border: 1px solid #eee; border-radius: 6px;">
+                        <h4 style="color: #1a73e8; margin-bottom: 10px;">Discussion Notes</h4>
+                        <div style="white-space: pre-wrap; font-size: 0.9rem;">{{ rec.discussion }}</div>
+                    </div>
+                    <div style="background: #fce8e6; padding: 15px; border: 1px solid #f9d2ce; border-radius: 6px;">
+                        <h4 style="color: #d93025; margin-bottom: 10px;">Recommended Next Steps</h4>
+                        <div style="white-space: pre-wrap; font-size: 0.9rem; font-weight: 500;">{{ rec.next_steps }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fa-solid fa-users-slash fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i>
+            <p>No Tumour Board meetings have been logged for this patient.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

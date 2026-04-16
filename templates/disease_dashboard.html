@@ -1,0 +1,72 @@
+{% extends "base_layout.html" %}
+{% block title %}Disease & Diagnosis{% endblock %}
+
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-virus" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;"><strong>Reg No:</strong> {{ patient.registration_number }} | <strong>Age:</strong> {{ patient.age }}</p>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Disease & Staging Records</h2>
+        <a href="{{ url_for('disease_diagnosis_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> New Diagnosis Record</a>
+    </div>
+
+    <div style="margin-top: 15px;">
+        {% for rec in records %}
+        <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+            <div style="background: #e8f0fe; padding: 12px 20px; border-bottom: 1px solid #d2e3fc; display: flex; justify-content: space-between;">
+                <strong style="color: #1967d2;"><i class="fa-solid fa-calendar-check" style="margin-right: 8px;"></i> Diagnosis Date: {{ rec.date.strftime('%d-%b-%Y') }}</strong>
+                <span style="color: #1967d2; font-size: 0.85rem;">Logged by: {{ rec.author }}</span>
+            </div>
+            
+            <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div><span style="color: var(--text-muted); font-size: 0.85rem;">Primary Site</span><br><strong>{{ rec.site }}</strong></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.85rem;">Risk Stratification</span><br><strong>{{ rec.risk }}</strong></div>
+                    <div><span style="color: var(--text-muted); font-size: 0.85rem;">Metastasis</span><br><strong>{{ rec.metastasis }}</strong> 
+                        {% if rec.metastasis == 'Present' %}<br><span style="font-size: 0.85rem; color: var(--primary-accent);">({{ rec.organs | join(', ') }})</span>{% endif %}
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;"><span style="color: var(--text-muted); font-size: 0.85rem;">Description:</span><br>{{ rec.desc }}</div>
+
+                {% if rec.staging %}
+                <h4 style="color: var(--primary-accent); margin-bottom: 10px; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px;">TNM Staging</h4>
+                <table class="compact-table" style="margin-bottom: 20px; border: 1px solid var(--border-color);">
+                    <thead style="background: #f8f9fa;"><tr><th>Date</th><th>Type</th><th>T</th><th>N</th><th>M</th><th>Stage</th><th>Comment</th></tr></thead>
+                    <tbody>
+                        {% for st in rec.staging %}<tr><td>{{ st.date }}</td><td>{{ st.type }}</td><td>{{ st.t }}</td><td>{{ st.n }}</td><td>{{ st.m }}</td><td><span class="badge badge-grey">{{ st.stage }}</span></td><td>{{ st.comment }}</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if rec.tumour %}
+                <h4 style="color: var(--text-dark); margin-bottom: 10px;">Primary Tumour Details</h4>
+                <table class="compact-table" style="margin-bottom: 20px; border: 1px solid var(--border-color);">
+                    <thead style="background: #f8f9fa;"><tr><th>L (cm)</th><th>W (cm)</th><th>D (cm)</th><th>T Stage</th><th>Description</th></tr></thead>
+                    <tbody>
+                        {% for t in rec.tumour %}<tr><td>{{ t.length }}</td><td>{{ t.width }}</td><td>{{ t.depth }}</td><td>{{ t.t_stage }}</td><td>{{ t.desc }}</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if rec.lymph %}
+                <h4 style="color: var(--text-dark); margin-bottom: 10px;">Lymph Node Details</h4>
+                <table class="compact-table" style="border: 1px solid var(--border-color);">
+                    <thead style="background: #f8f9fa;"><tr><th>LN Group</th><th>L (cm)</th><th>W (cm)</th><th>D (cm)</th><th>N Stage</th><th>Description</th></tr></thead>
+                    <tbody>
+                        {% for l in rec.lymph %}<tr><td>{{ l.group }}</td><td>{{ l.length }}</td><td>{{ l.width }}</td><td>{{ l.depth }}</td><td>{{ l.n_stage }}</td><td>{{ l.desc }}</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-clipboard-check fa-2x" style="margin-bottom: 10px; opacity: 0.5;"></i><p>No diagnosis records logged.</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

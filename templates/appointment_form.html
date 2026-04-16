@@ -1,0 +1,94 @@
+{% extends "base_layout.html" %}
+{% block title %}Schedule Appointment{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-calendar-plus" style="color: #673ab7; margin-right: 10px;"></i>Schedule New Appointment</h2>
+    <a href="{{ url_for('appointments_dashboard', date=default_date) }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div class="panel-card" style="max-width: 800px; margin: 0 auto; padding: 30px;">
+    
+    <div style="background: #e8f0fe; color: #1558d6; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+        <span><i class="fa-solid fa-circle-info"></i> Appointments can only be booked for registered patients.</span>
+        <a href="{{ url_for('patient_registration') }}" class="btn-primary" style="font-size: 0.8rem; padding: 6px 12px;">Register New Patient Here</a>
+    </div>
+
+    <form action="{{ url_for('appointment_new') }}" method="POST">
+        <div class="grid-form">
+            
+            <div class="form-group full-width" style="border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <label>Select Patient *</label>
+                <select name="patient_id" id="patient_select" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;" required onchange="fetchPatientInfo()">
+                    <option value="" disabled selected>-- Search & Select Patient --</option>
+                    {% for p in patients %}
+                        <option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name }} ({{ p.registration_number }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group"><label>Age</label><input type="text" id="auto_age" style="width: 100%; padding: 8px; background: #f8f9fa; border: 1px solid #ccc; color: #555;" readonly></div>
+            <div class="form-group"><label>Gender</label><input type="text" id="auto_gender" style="width: 100%; padding: 8px; background: #f8f9fa; border: 1px solid #ccc; color: #555;" readonly></div>
+            <div class="form-group full-width"><label>Primary Diagnosis</label><input type="text" id="auto_diagnosis" style="width: 100%; padding: 8px; background: #f8f9fa; border: 1px solid #ccc; color: #555;" readonly></div>
+
+            <div class="form-group" style="margin-top: 15px;"><label>Date *</label><input type="date" id="appointment_date" name="appointment_date" value="{{ default_date }}" style="width: 100%; padding: 10px; border: 1px solid #ccc;" required></div>
+            <div class="form-group" style="margin-top: 15px;"><label>Time *</label><input type="time" name="appointment_time" style="width: 100%; padding: 10px; border: 1px solid #ccc;" required></div>
+
+            <div class="form-group">
+                <label>Provider / Resource *</label>
+                <select name="physician_name" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+                    <option value="" disabled selected>-- Select Provider --</option>
+                    <option value="Chemo Administration" style="font-weight: bold; color: #0f9d58;">Chemo Administration Unit</option>
+                    {% for ph in physicians %}
+                        <option value="Dr. {{ ph.first_name }} {{ ph.last_name }}">Dr. {{ ph.first_name }} {{ ph.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status *</label>
+                <select name="status" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+                    <option value="Pending Confirmation" selected>Pending Confirmation</option>
+                    <option value="Confirmed">Confirmed</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label>Comments / Reason for Visit</label>
+                <textarea name="notes" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+            </div>
+
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+            <button type="submit" class="btn-primary" style="background: #673ab7; border-color: #673ab7; font-size: 1.1rem; padding: 12px 30px;"><i class="fa-solid fa-calendar-check"></i> Confirm Booking</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Automatically restrict the calendar to block past dates
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate today's date adjusted for local timezone
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+        
+        // Apply the minimum date restriction
+        document.getElementById('appointment_date').setAttribute('min', todayLocal);
+    });
+
+    async function fetchPatientInfo() {
+        let pid = document.getElementById('patient_select').value;
+        if(!pid) return;
+        
+        // Call our new API endpoint
+        let response = await fetch(`/api/patient/${pid}/basic_info`);
+        let data = await response.json();
+        
+        // Auto-fill the disabled inputs
+        document.getElementById('auto_age').value = data.age + ' Yrs';
+        document.getElementById('auto_gender').value = data.gender;
+        document.getElementById('auto_diagnosis').value = data.diagnosis;
+    }
+</script>
+{% endblock %}

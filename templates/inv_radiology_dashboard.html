@@ -1,0 +1,39 @@
+{% extends "base_layout.html" %}
+{% block title %}Radiology{% endblock %}
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-x-ray" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;"><strong>Reg No:</strong> {{ patient.registration_number }} | <strong>Age:</strong> {{ patient.age }}</p>
+    </div>
+</div>
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Radiology Records</h2>
+        <div style="display: flex; gap: 10px;">
+            {% if user.role == 'Admin' %}<a href="{{ url_for('export_radiology') }}" class="btn-secondary" style="color: #28a745; border-color: #28a745;"><i class="fa-solid fa-file-excel"></i> Export</a>{% endif %}
+            <a href="{{ url_for('inv_radiology_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Log Radiology</a>
+        </div>
+    </div>
+    <div style="margin-top: 15px;">
+        {% for rec in records %}
+        <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+            <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid var(--border-color);"><strong>Logged on: {{ rec.date.strftime('%d-%b-%Y') }}</strong></div>
+            <div style="padding: 20px;">
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Test Name</th><th>Organ</th><th>Result</th><th>Comment</th><th>Attachment</th></tr></thead>
+                    <tbody>
+                        {% for item in rec.data %}
+                        <tr>
+                            <td>{{ item.date }}</td><td>{{ item.test }}</td><td>{{ item.organ }}</td><td>{{ item.result }}</td><td>{{ item.comment }}</td>
+                            <td>{% if item.file %}<a href="{{ url_for('static', filename='uploads/' + item.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ item.file }}</a>{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

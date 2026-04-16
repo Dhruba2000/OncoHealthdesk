@@ -1,0 +1,145 @@
+{% extends "base_layout.html" %}
+{% block title %}Medical History{% endblock %}
+
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-notes-medical" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.middle_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;">
+            <strong>Reg No:</strong> {{ patient.registration_number }} | 
+            <strong>Age:</strong> {{ patient.age }} | 
+            <strong>Gender:</strong> {{ patient.gender }} | 
+            <strong>Diagnosis:</strong> <span class="badge badge-grey" style="margin-left: 5px;">{{ patient.primary_diagnosis }}</span>
+        </p>
+    </div>
+</div>
+
+<div class="panel-header">
+    <h2>Medical History File</h2>
+    {% if user.role == 'Admin' %}
+        <a href="{{ url_for('export_medical_history') }}" class="btn-secondary" style="color: #28a745; border-color: #28a745;"><i class="fa-solid fa-file-excel"></i> Export History</a>
+    {% endif %}
+</div>
+
+<div class="panel-card" style="max-width: 1000px; margin: 0 auto;">
+    <form action="{{ url_for('medical_history', patient_id=patient.id) }}" method="POST">
+
+        <h3 class="form-section-title"><i class="fa-solid fa-smoking"></i> Addiction History</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">History Present?</label>
+            <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
+                <select name="has_addiction" id="has_addiction" onchange="toggleSection('addiction_details', this.value)">
+                    <option value="No" {% if not history or history.has_addiction == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_addiction == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
+            </div>
+        </div>
+        <div id="addiction_details" class="grid-form" style="display: {% if history and history.has_addiction == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group"><label>Addiction Of</label><div class="input-with-icon"><i class="fa-solid fa-wine-glass"></i><input type="text" name="addiction_type" placeholder="e.g. Tobacco, Alcohol" value="{{ history.addiction_type or '' if history else '' }}"></div></div>
+            <div class="form-group"><label>Since Years</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="addiction_years" value="{{ history.addiction_years or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="addiction_comments" value="{{ history.addiction_comments or '' if history else '' }}"></div></div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-viruses"></i> Allergy History</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">Known Allergies?</label>
+            <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
+                <select name="has_allergy" id="has_allergy" onchange="toggleSection('allergy_details', this.value)">
+                    <option value="No" {% if not history or history.has_allergy == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_allergy == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
+            </div>
+        </div>
+        <div id="allergy_details" class="grid-form" style="display: {% if history and history.has_allergy == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group"><label>Allergic To</label><div class="input-with-icon"><i class="fa-solid fa-triangle-exclamation"></i><input type="text" name="allergy_details" placeholder="Drugs, Food, etc." value="{{ history.allergy_details or '' if history else '' }}"></div></div>
+            <div class="form-group"><label>Since Years</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="allergy_years" value="{{ history.allergy_years or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Comments / Reactions</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="allergy_comments" value="{{ history.allergy_comments or '' if history else '' }}"></div></div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-people-roof"></i> Significant Family History</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">History Present?</label>
+            <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
+                <select name="has_family_history" id="has_family_history" onchange="toggleSection('family_details', this.value)">
+                    <option value="No" {% if not history or history.has_family_history == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_family_history == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
+            </div>
+        </div>
+        <div id="family_details" class="grid-form" style="display: {% if history and history.has_family_history == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group"><label>Family History Of</label><div class="input-with-icon"><i class="fa-solid fa-dna"></i><input type="text" name="family_condition" placeholder="e.g. BRCA Mutation" value="{{ history.family_condition or '' if history else '' }}"></div></div>
+            <div class="form-group"><label>Family Member</label><div class="input-with-icon"><i class="fa-solid fa-user-group"></i><input type="text" name="family_member" placeholder="Relation (e.g. Mother)" value="{{ history.family_member or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="family_comments" value="{{ history.family_comments or '' if history else '' }}"></div></div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-staff-snake"></i> Past Medical History</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">Co-morbidities?</label>
+            <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
+                <select name="has_past_medical" id="has_past_medical" onchange="toggleSection('medical_details', this.value)">
+                    <option value="No" {% if not history or history.has_past_medical == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_past_medical == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
+            </div>
+        </div>
+        <div id="medical_details" class="grid-form" style="display: {% if history and history.has_past_medical == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group"><label>Co-morbidity</label><div class="input-with-icon"><i class="fa-solid fa-heart-pulse"></i><input type="text" name="comorbidity" placeholder="e.g. HTN, T2DM" value="{{ history.comorbidity or '' if history else '' }}"></div></div>
+            <div class="form-group"><label>Status</label><div class="input-with-icon"><i class="fa-solid fa-traffic-light"></i><select name="is_controlled"><option value="" disabled {% if not history or not history.is_controlled %}selected{% endif %}>Select</option><option value="Controlled" {% if history and history.is_controlled == 'Controlled' %}selected{% endif %}>Controlled</option><option value="Un-controlled" {% if history and history.is_controlled == 'Un-controlled' %}selected{% endif %}>Un-controlled</option></select></div></div>
+            <div class="form-group full-width"><label>Medicine Names</label><div class="input-with-icon"><i class="fa-solid fa-pills"></i><input type="text" name="medicine_names" placeholder="Current Medications" value="{{ history.medicine_names or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="medical_comments" value="{{ history.medical_comments or '' if history else '' }}"></div></div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-scalpel"></i> Past Surgical History</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">Prior Surgeries?</label>
+            <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
+                <select name="has_past_surgical" id="has_past_surgical" onchange="toggleSection('surgical_details', this.value)">
+                    <option value="No" {% if not history or history.has_past_surgical == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_past_surgical == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
+            </div>
+        </div>
+        <div id="surgical_details" class="grid-form" style="display: {% if history and history.has_past_surgical == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group"><label>Name of Surgery</label><div class="input-with-icon"><i class="fa-solid fa-scissors"></i><input type="text" name="surgery_name" value="{{ history.surgery_name or '' if history else '' }}"></div></div>
+            <div class="form-group"><label>Year</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="surgery_year" value="{{ history.surgery_year or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Indication</label><div class="input-with-icon"><i class="fa-solid fa-clipboard-question"></i><input type="text" name="surgery_indication" value="{{ history.surgery_indication or '' if history else '' }}"></div></div>
+            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="surgical_comments" value="{{ history.surgical_comments or '' if history else '' }}"></div></div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-person-breastfeeding"></i> Reproductive & Social History</h3>
+        <div class="grid-form" style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Marital Status</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-ring"></i>
+                    <select name="marital_status">
+                        <option value="" disabled {% if not history or not history.marital_status %}selected{% endif %}>Select</option>
+                        <option value="Married" {% if history and history.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                        <option value="Unmarried" {% if history and history.marital_status == 'Unmarried' %}selected{% endif %}>Unmarried</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Children</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-children"></i>
+                    <select name="has_children">
+                        <option value="No" {% if not history or history.has_children == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if history and history.has_children == 'Yes' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group full-width" style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="submit" class="btn-primary" style="width: 100%; max-width: 350px;"><i class="fa-solid fa-floppy-disk"></i> Save Medical History</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleSection(sectionId, value) {
+        document.getElementById(sectionId).style.display = (value === 'Yes') ? 'grid' : 'none';
+    }
+</script>
+{% endblock %}

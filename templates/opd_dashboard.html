@@ -1,0 +1,59 @@
+{% extends "base_layout.html" %}
+{% block title %}OPD Consultations{% endblock %}
+
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-user-doctor" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;">
+            <strong>Reg No:</strong> {{ patient.registration_number }} | 
+            <strong>Age:</strong> {{ patient.age }} | 
+            <strong>Diagnosis:</strong> <span class="badge badge-grey">{{ patient.primary_diagnosis }}</span>
+        </p>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Past Consultations</h2>
+        <div style="display: flex; gap: 10px;">
+            {% if user.role == 'Admin' %}
+                <a href="{{ url_for('export_opd') }}" class="btn-secondary" style="color: #28a745; border-color: #28a745;"><i class="fa-solid fa-file-excel"></i> Export All OPD</a>
+            {% endif %}
+            <a href="{{ url_for('opd_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Start New Visit</a>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto; margin-top: 15px;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Visit Date</th>
+                    <th>Physician</th>
+                    <th>ECOG</th>
+                    <th>Vitals (BP/Pulse)</th>
+                    <th>Next Scheduled Visit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in visits %}
+                <tr>
+                    <td style="font-weight: 600; color: var(--primary-accent);">{{ visit.visit_date.strftime('%d-%b-%Y') }}</td>
+                    <td>{{ visit.created_by }}</td>
+                    <td><span class="badge" style="background: #e8eaed; color: #1f1f1f;">PS {{ visit.ecog or '-' }}</span></td>
+                    <td>{{ visit.bp or '-' }} mmHg / {{ visit.pulse or '-' }} bpm</td>
+                    <td>{{ visit.next_visit_date.strftime('%d-%b-%Y') if visit.next_visit_date else 'Not Scheduled' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fa-solid fa-stethoscope fa-2x" style="margin-bottom: 10px; opacity: 0.5; display: block;"></i>
+                        No prior OPD visits recorded for this patient.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

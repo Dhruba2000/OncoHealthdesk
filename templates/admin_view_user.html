@@ -1,0 +1,31 @@
+{% extends "base_layout.html" %}
+{% block title %}Review User{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2>Review Access Request</h2>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="panel-card" style="max-width: 600px;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 25px; font-size: 0.95rem;">
+        <strong style="color: var(--text-muted);">Name:</strong> <span>{{ target_user.salutation }} {{ target_user.first_name }} {{ target_user.last_name }}</span>
+        <strong style="color: var(--text-muted);">Role:</strong> <span><span class="badge badge-grey">{{ target_user.role }}</span></span>
+        <strong style="color: var(--text-muted);">Username:</strong> <span>{{ target_user.username }}</span>
+        <strong style="color: var(--text-muted);">Email:</strong> <span>{{ target_user.email }}</span>
+        <strong style="color: var(--text-muted);">Mobile:</strong> <span>{{ target_user.mobile_number }}</span>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin-bottom: 20px;">
+
+    {% if not target_user.is_approved %}
+        <form action="/admin/approve/{{ target_user.id }}" method="POST">
+            <button type="submit" class="btn-primary" style="width: 100%; background-color: #137333;"><i class="fa-solid fa-check-double"></i> Approve Access</button>
+        </form>
+    {% else %}
+        <div style="background-color: #e6f4ea; color: #137333; padding: 15px; border-radius: 4px; text-align: center; font-weight: 600;">
+            <i class="fa-solid fa-shield-check"></i> User is approved and active.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

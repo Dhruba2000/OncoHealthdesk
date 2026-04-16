@@ -1,0 +1,44 @@
+{% extends "base_layout.html" %}
+{% block title %}Billing Dashboard{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-file-invoice-dollar" style="color: #1a73e8; margin-right: 10px;"></i>Billing & Invoices</h2>
+    <a href="{{ url_for('billing_new') }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Create New Invoice</a>
+</div>
+
+<div class="panel-card">
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead style="background: #f8f9fa;">
+                <tr><th>Date</th><th>Invoice No.</th><th>Patient Name</th><th>Physician</th><th>Net Amount</th><th>Received</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>{{ inv.invoice_date.strftime('%d-%b-%Y') }}</td>
+                    <td style="font-weight: 600; color: #1a73e8;">{{ inv.invoice_number }}</td>
+                    <td><strong>{{ inv.patient.first_name }} {{ inv.patient.last_name }}</strong></td>
+                    <td>{{ inv.physician_name }}</td>
+                    <td>₹ {{ "%.2f"|format(inv.grand_total) }}</td>
+                    <td style="color: #0f9d58;">₹ {{ "%.2f"|format(inv.amount_paid) }}</td>
+                    <td>
+                        {% if inv.status == 'Paid' %}<span class="badge" style="background: #e6f4ea; color: #137333;">Paid</span>
+                        {% elif inv.status == 'Partial' %}<span class="badge" style="background: #fef7e0; color: #b06000;">Partial</span>
+                        {% else %}<span class="badge" style="background: #fce8e6; color: #d93025;">Unpaid</span>{% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('billing_view', invoice_id=inv.id) }}" class="btn-secondary" style="padding: 4px 8px;"><i class="fa-solid fa-eye" style="color: #1a73e8;"></i></a>
+                        {% if user.role == 'Admin' %}
+                        <a href="{{ url_for('billing_delete', invoice_id=inv.id) }}" class="btn-secondary" style="padding: 4px 8px; margin-left: 5px;" onclick="return confirm('Delete this invoice? This cannot be undone.');"><i class="fa-solid fa-trash" style="color: #d93025;"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">No invoices generated yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

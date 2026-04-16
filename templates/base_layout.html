@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Onco HealthDesk{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-accent: #1a73e8;
+            --sidebar-bg: #ffffff;
+            --sidebar-hover: #e8f0fe;
+            --sidebar-text: #333333;
+            --bg-color: #f4f7f6;
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --border-color: #e0e0e0;
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SIDEBAR STYLING - Now with Collapsible Transitions */
+        .sidebar { width: 280px; background-color: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; height: 100vh; border-right: 1px solid var(--border-color); flex-shrink: 0; transition: width 0.3s ease; }
+        
+        /* Collapsed State */
+        .sidebar.collapsed { width: 75px; }
+        .sidebar.collapsed .sidebar-brand h2,
+        .sidebar.collapsed .sidebar-brand h3,
+        .sidebar.collapsed .nav-section-title,
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .sidebar-footer { display: none; }
+        .sidebar.collapsed .nav-link { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-link i { margin-right: 0; font-size: 1.3rem; }
+        .sidebar.collapsed .sidebar-brand { padding: 15px 5px; }
+        .sidebar.collapsed .sidebar-brand img { margin-bottom: 0; }
+        
+        /* Sidebar Brand (Shrunk down significantly) */
+        .sidebar-brand { padding: 20px 15px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap; overflow: hidden; }
+        .sidebar-brand img { max-width: 25px; max-height: 25px; margin-bottom: 5px; object-fit: contain; } /* ~25% of old size */
+        .sidebar-brand h2 { margin: 0; font-size: 1.15rem; color: var(--primary-accent); font-weight: 700; transition: all 0.2s; } /* 75% of old size */
+        
+        .nav-links { padding: 15px; flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
+        .nav-section-title { font-size: 0.75rem; color: #888; font-weight: 700; text-transform: uppercase; margin: 20px 0 10px 10px; letter-spacing: 0.5px; white-space: nowrap; }
+        
+        .nav-link { display: flex; align-items: center; padding: 10px 15px; color: var(--sidebar-text); text-decoration: none; border-radius: 6px; margin-bottom: 4px; font-weight: 500; transition: all 0.2s ease; white-space: nowrap; }
+        .nav-link i { min-width: 25px; text-align: center; font-size: 1.1rem; color: var(--primary-accent); margin-right: 10px; transition: margin 0.3s; }
+        .nav-link:hover, .nav-link.active { background-color: var(--sidebar-hover); color: var(--primary-accent); font-weight: 600; }
+
+        /* MAIN CONTENT AREA */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-color); transition: width 0.3s ease; }
+        
+        /* TOP NAV BAR - Added Hamburger Menu */
+        .topbar { background: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02); flex-shrink: 0; }
+        .topbar-left { display: flex; align-items: center; gap: 20px; }
+        #sidebar-toggle { background: none; border: none; font-size: 1.4rem; color: var(--text-dark); cursor: pointer; padding: 5px; border-radius: 4px; transition: background 0.2s; }
+        #sidebar-toggle:hover { background: #f0f2f5; }
+        
+        .clinic-header-name { margin: 0; font-size: 1.3rem; color: var(--primary-accent); font-weight: 700; letter-spacing: 0.5px; }
+        
+        .user-profile { display: flex; align-items: center; gap: 15px; color: var(--text-dark); font-weight: 500; }
+        .logout-btn { color: #d93025; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 6px 12px; border-radius: 4px; transition: background 0.2s; }
+        .logout-btn:hover { background: #fce8e6; }
+
+        /* PAGE CONTENT SCROLL AREA */
+        .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; }
+
+        /* FOOTER */
+        .main-footer { background: var(--primary-accent); color: #ffffff; text-align: center; padding: 12px; font-size: 0.85rem; font-weight: 500; flex-shrink: 0; letter-spacing: 0.5px; }
+
+        /* GLOBAL UI COMPONENTS */
+        .panel-card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid var(--border-color); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .panel-header h2 { margin: 0; font-size: 1.4rem; color: var(--text-dark); }
+        
+        .btn-primary { background: var(--primary-accent); color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; border: none; font-weight: 500; cursor: pointer; display: inline-block; transition: opacity 0.2s; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid #ccc; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: 500; cursor: pointer; display: inline-block; transition: all 0.2s; }
+        .btn-secondary:hover { background: #f8f9fa; color: var(--text-dark); border-color: #999; }
+
+        .data-table { width: 100%; border-collapse: collapse; background: #fff; }
+        .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .data-table th { background: #f8f9fa; font-weight: 600; color: var(--text-dark); }
+        
+        .compact-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .compact-table th, .compact-table td { padding: 8px 10px; border: 1px solid #eee; text-align: left; }
+        .compact-table input, .compact-table select { width: 100%; box-sizing: border-box; padding: 4px; border: 1px solid #ccc; border-radius: 3px; }
+
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        .full-width { grid-column: 1 / -1; }
+
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .badge-grey { background: #e8eaed; color: #3c4043; }
+
+        .alert { padding: 12px 20px; border-radius: 4px; margin-bottom: 20px; background: #e6f4ea; color: #137333; border: 1px solid #ceead6; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="app-sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='inline-block';">
+            <i id="fallback-icon" class="fa-solid fa-notes-medical" style="color: #1a73e8; display: none; font-size: 1.8rem; margin-bottom: 5px;"></i>
+            <h2>Onco HealthDesk</h2>
+        </div>
+        
+        <div class="nav-links">
+            <div class="nav-section-title">Core Registry</div>
+            <a href="{{ url_for('patient_dashboard') }}" class="nav-link"><i class="fa-solid fa-hospital-user"></i> <span>Patient Registry</span></a>
+
+            {% if patient and patient.id %}
+            <div style="background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; margin: 10px 0 20px 0; padding-bottom: 10px;">
+                <div class="nav-section-title" style="color: #1a73e8; margin-top: 15px;">Active Chart</div>
+                
+                <a href="{{ url_for('patient_overview', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-laptop-medical"></i> <span>Overview</span></a>
+                <a href="{{ url_for('disease_diagnosis', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-virus"></i> <span>Disease & Diagnosis</span></a>
+                <a href="{{ url_for('medical_history', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> <span>Medical History</span></a>
+                <a href="{{ url_for('opd_consultations', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-user-doctor"></i> <span>OPD Consultations</span></a>
+                
+                <div class="nav-section-title" style="margin-left: 20px; font-size: 0.65rem;">Investigations</div>
+                <a href="{{ url_for('inv_pathology', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-microscope" style="font-size: 0.9rem;"></i> <span>Pathology</span></a>
+                <a href="{{ url_for('inv_radiology', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-x-ray" style="font-size: 0.9rem;"></i> <span>Radiology</span></a>
+                <a href="{{ url_for('inv_biochemistry', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-vial" style="font-size: 0.9rem;"></i> <span>Biochemistry</span></a>
+                <a href="{{ url_for('inv_miscellaneous', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-file-waveform" style="font-size: 0.9rem;"></i> <span>Miscellaneous</span></a>
+                
+                <div class="nav-section-title" style="margin-left: 20px; font-size: 0.65rem;">Treatments & Planning</div>
+                <a href="{{ url_for('day_care', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-bed-pulse"></i> <span>Day Care Session</span></a>
+                <a href="{{ url_for('treatments', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-syringe"></i> <span>Treatment Master</span></a>
+                <a href="{{ url_for('tumour_board', patient_id=patient.id) }}" class="nav-link"><i class="fa-solid fa-users-viewfinder"></i> <span>Tumour Board</span></a>
+            </div>
+            {% endif %}
+
+            <div class="nav-section-title">Clinic Operations</div>
+            <a href="{{ url_for('appointments_dashboard') }}" class="nav-link"><i class="fa-regular fa-calendar-check"></i> <span>Appointments</span></a>
+            <a href="{{ url_for('billing') }}" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i> <span>Billing & Invoices</span></a>
+            <a href="{{ url_for('protocols_master') }}" class="nav-link"><i class="fa-solid fa-book-medical"></i> <span>Protocols Master</span></a>
+            
+            {% if user.role == 'Admin' %}
+            <div class="nav-section-title">System</div>
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link"><i class="fa-solid fa-shield-halved" style="color: #d93025;"></i> <span>Admin Dashboard</span></a>
+            {% endif %}
+            
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="topbar">
+            <div class="topbar-left">
+                <button id="sidebar-toggle" title="Toggle Menu"><i class="fa-solid fa-bars"></i></button>
+                <h1 class="clinic-header-name"><i class="fa-solid fa-hospital" style="margin-right: 8px;"></i> BB Precision Oncocare Centre</h1>
+            </div>
+            
+            <div class="user-profile">
+                <i class="fa-solid fa-user-circle fa-2x" style="color: #ccc;"></i>
+                <div>
+                    <div style="font-size: 0.95rem;">Logged in as <strong>{{ user.username }}</strong></div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Role: {{ user.role }}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn" style="margin-left: 20px;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+
+        <div class="content-scroll">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert"><i class="fa-solid fa-circle-check" style="margin-right: 8px;"></i>{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+        <div class="main-footer">
+            Copyright © Ytal Tech Solutions & Services LLP | V 1.0.0
+        </div>
+    </div>
+
+    <script>
+        // Sidebar Toggle Logic
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            document.getElementById('app-sidebar').classList.toggle('collapsed');
+        });
+
+        // Global Form Polishing: Turn all mandatory asterisks RED
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('label').forEach(label => {
+                if (label.innerHTML.includes('*')) {
+                    label.innerHTML = label.innerHTML.replace('*', '<span style="color: #d93025; font-weight: bold; margin-left: 3px;">*</span>');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

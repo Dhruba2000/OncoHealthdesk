@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Discharge Summary - Cycle {{ record.cycle_number }} Day {{ record.day_number }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #000; padding: 40px; max-width: 800px; margin: 0 auto; }
+        h1, h2, h3 { color: #0f9d58; margin-bottom: 5px; }
+        .header { border-bottom: 2px solid #0f9d58; padding-bottom: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        .section { margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>BB Precision Oncocare Centre</h1>
+        <h2>Day Care Chemotherapy Administration Summary</h2>
+    </div>
+
+    <div class="section">
+        <h3>Patient Details</h3>
+        <table>
+            <tr>
+                <th>Patient Name</th><td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                <th>Reg No.</th><td>{{ patient.registration_number }}</td>
+            </tr>
+            <tr>
+                <th>Age / Gender</th><td>{{ patient.age }} Y / {{ patient.gender }}</td>
+                <th>Diagnosis</th><td>{{ patient.primary_diagnosis }}</td>
+            </tr>
+            <tr>
+                <th>Protocol</th><td>{{ record.patient_protocol.protocol.name }}</td>
+                <th>Cycle / Day</th><td><strong>Cycle {{ record.cycle_number }}, Day {{ record.day_number }}</strong></td>
+            </tr>
+            <tr>
+                <th>Administered On</th><td>{{ record.actual_date.strftime('%d %B %Y') }}</td>
+                <th>BSA</th><td>{{ record.bsa }} sqm</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h3>Drugs Administered</h3>
+        <table>
+            <tr><th>Drug Name</th><th>Final Administered Dose</th><th>Start Time</th><th>End Time</th></tr>
+            {% for d in admin %}
+            <tr><td>{{ d.name }}</td><td>{{ d.disp_dose | default('Refer to Plan') }}</td><td>{{ d.start }}</td><td>{{ d.end }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h3>Post-Administration Vitals</h3>
+        <p><strong>Temp:</strong> {{ vitals.temp }} | <strong>Pulse:</strong> {{ vitals.pulse }} | <strong>BP:</strong> {{ vitals.bp }} | <strong>RR:</strong> {{ vitals.rr }} | <strong>SpO2:</strong> {{ vitals.spo2 }}</p>
+    </div>
+
+    <div class="section">
+        <h3>Discharge Instructions & Notes</h3>
+        <div style="padding: 15px; border: 1px solid #ccc; background: #fafafa; white-space: pre-wrap;">{{ record.discharge_notes }}</div>
+    </div>
+
+    <div class="section">
+        <h3>Take Home Medications</h3>
+        <table>
+            <tr><th>Drug Form</th><th>Drug Name</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Days</th></tr>
+            {% for m in meds %}
+            <tr><td>{{ m.form }}</td><td>{{ m.drug }}</td><td>{{ m.dose }}</td><td>{{ m.route }}</td><td>{{ m.frequency }}</td><td>{{ m.days }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div style="margin-top: 50px; text-align: right;">
+        <p>_______________________________</p>
+        <p><strong>Authorized By:</strong> {{ record.created_by }}</p>
+    </div>
+    
+    <button onclick="window.print()" style="display: block; width: 100%; padding: 15px; background: #0f9d58; color: white; border: none; cursor: pointer; margin-top: 30px; font-size: 16px;" onbeforeprint="this.style.display='none'" onafterprint="this.style.display='block'">Print Summary PDF</button>
+</body>
+</html>

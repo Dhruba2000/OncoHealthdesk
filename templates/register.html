@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Request Access - Onco Healthdesk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="align-items: center; justify-content: center; background-color: var(--bg-global); padding: 40px 0;">
+    <div class="panel-card" style="width: 100%; max-width: 700px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: var(--primary-accent); font-size: 1.8rem;">Staff Registration</h1>
+            <p style="color: var(--text-muted);">Account requires Admin approval prior to access.</p>
+        </div>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flash-messages">{% for message in messages %}<li>{{ message }}</li>{% endfor %}</ul>
+          {% endif %}
+        {% endwith %}
+
+        <form action="/register" method="POST" class="grid-form">
+            <div class="form-group">
+                <label>Salutation *</label>
+                <div class="input-with-icon"><i class="fa-solid fa-user-tag"></i>
+                <select name="salutation" required>
+                    <option value="" disabled selected>Select</option>
+                    <option value="Dr.">Dr.</option>
+                    <option value="Mr.">Mr.</option>
+                    <option value="Ms.">Ms.</option>
+                    <option value="Mrs.">Mrs.</option>
+                </select></div>
+            </div>
+            <div class="form-group"><label>First Name *</label><div class="input-with-icon"><i class="fa-solid fa-id-badge"></i><input type="text" name="first_name" required></div></div>
+            <div class="form-group"><label>Middle Name</label><div class="input-with-icon"><i class="fa-solid fa-id-badge"></i><input type="text" name="middle_name"></div></div>
+            <div class="form-group"><label>Last Name *</label><div class="input-with-icon"><i class="fa-solid fa-id-badge"></i><input type="text" name="last_name" required></div></div>
+            
+            <div class="form-group full-width">
+                <label>Requested Role *</label>
+                <div class="input-with-icon"><i class="fa-solid fa-stethoscope"></i>
+                <select name="role" required>
+                    <option value="" disabled selected>Select Role</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Physician">Physician</option>
+                    <option value="RMO">RMO</option>
+                    <option value="Nurse">Nurse</option>
+                </select></div>
+            </div>
+
+            <div class="form-group"><label>Mobile Number *</label><div class="input-with-icon"><i class="fa-solid fa-mobile-button"></i><input type="text" name="mobile_number" required></div></div>
+            <div class="form-group"><label>Email Address *</label><div class="input-with-icon"><i class="fa-solid fa-envelope"></i><input type="email" name="email" required></div></div>
+            <div class="form-group full-width"><label>Choose Username *</label><div class="input-with-icon"><i class="fa-solid fa-user-check"></i><input type="text" name="username" required></div></div>
+            <div class="form-group"><label>Password *</label><div class="input-with-icon"><i class="fa-solid fa-key"></i><input type="password" name="password" required></div></div>
+            <div class="form-group"><label>Confirm Password *</label><div class="input-with-icon"><i class="fa-solid fa-key"></i><input type="password" name="confirm_password" required></div></div>
+
+            <div class="form-group full-width" style="margin-top: 15px; text-align: center;">
+                <button type="submit" class="btn-primary" style="width: 100%; max-width: 300px;"><i class="fa-solid fa-paper-plane"></i> Submit for Approval</button>
+            </div>
+        </form>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/login" style="color: var(--text-muted); font-weight: 500;"><i class="fa-solid fa-arrow-left"></i> Return to Login</a>
+        </div>
+    </div>
+</body>
+</html>

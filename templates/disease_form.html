@@ -1,0 +1,138 @@
+{% extends "base_layout.html" %}
+{% block title %}Log Diagnosis{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-virus" style="color: var(--primary-accent); margin-right: 10px;"></i>Log Disease & Diagnosis</h2>
+    <a href="{{ url_for('disease_diagnosis', patient_id=patient.id) }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div class="panel-card" style="background: #fdfdfd; border-left: 4px solid #fbbc04; margin-bottom: 25px; padding: 20px;">
+    <h3 style="font-size: 1.1rem; color: #b06000; margin-bottom: 15px;"><i class="fa-solid fa-circle-info"></i> Clinical Reference (Recent Investigations)</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        
+        <div style="background: #fff; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; height: 250px; overflow-y: auto;">
+            <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-muted);">Pathology Data</h4>
+            {% for pr in path_records %}
+                {% for c in pr.cyto %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Cytology ({{ c.date }}):</strong> {{ c.specimen }} - {{ c.interpretation }}</div>{% endfor %}
+                {% for h in pr.histo %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Histopathology ({{ h.date }}):</strong> {{ h.type }} - Grade: {{ h.grading }} - {{ h.interpretation }}</div>{% endfor %}
+                {% for b in pr.bio %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Biomarker ({{ b.date }}):</strong> {{ b.biomarker }} - <strong>Status: {{ b.status }}</strong></div>{% endfor %}
+            {% else %} <div style="font-size: 0.85rem; color: #999;">No pathology records available.</div> {% endfor %}
+        </div>
+
+        <div style="background: #fff; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; height: 250px; overflow-y: auto;">
+            <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-muted);">Radiology Data</h4>
+            {% for rr in rad_records %}
+                {% for r in rr.data %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>{{ r.test }} ({{ r.date }}):</strong> {{ r.result }}</div>{% endfor %}
+            {% else %} <div style="font-size: 0.85rem; color: #999;">No radiology records available.</div> {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto;">
+    <form action="{{ url_for('disease_diagnosis_new', patient_id=patient.id) }}" method="POST">
+        
+        <h3 class="form-section-title"><i class="fa-solid fa-clipboard-user"></i> Core Diagnosis</h3>
+        <div class="grid-form">
+            <div class="form-group"><label>Date of Diagnosis *</label><input type="date" id="diagnosis_date_input" name="date_of_diagnosis" required></div>
+            <div class="form-group"><label>Primary Site *</label><div class="input-with-icon"><i class="fa-solid fa-location-crosshairs"></i><input type="text" name="primary_site" placeholder="e.g. Right Breast" required></div></div>
+            <div class="form-group full-width"><label>Diagnosis Description</label><div class="input-with-icon"><i class="fa-solid fa-align-left"></i><input type="text" name="diagnosis_description"></div></div>
+            <div class="form-group">
+                <label>Risk Stratification</label>
+                <div class="input-with-icon"><i class="fa-solid fa-triangle-exclamation"></i>
+                <select name="risk_stratification">
+                    <option value="" selected disabled>Select</option><option value="Low">Low</option><option value="Intermediate">Intermediate</option><option value="High">High</option><option value="NA">NA</option>
+                </select></div>
+            </div>
+        </div>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-network-wired"></i> Metastasis</h3>
+        <div class="form-group" style="max-width: 300px;">
+            <label>Metastasis Status</label>
+            <div class="input-with-icon"><i class="fa-solid fa-code-branch"></i>
+            <select name="metastasis" id="meta_status" onchange="toggleMeta()">
+                <option value="Absent" selected>Absent</option><option value="Present">Present</option>
+            </select></div>
+        </div>
+        <div id="meta_section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="form-group" style="max-width: 300px;"><label>Number of Organs</label><input type="number" id="meta_count" min="1" max="10" oninput="generateOrgans()" style="padding: 6px; width: 100%; border: 1px solid #ccc;"></div>
+            <div id="organs_container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+        </div>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-circle-dot"></i> Primary Tumour Size</h3>
+        <table class="compact-table" id="tumourTable" style="background: #fff; border: 1px solid var(--border-color);">
+            <thead><tr style="background: #f8f9fa;"><th>Length (cm)</th><th>Width (cm)</th><th>Depth (cm)</th><th>T Stage</th><th>Description</th><th></th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="ts_len[]"></td><td><input type="text" name="ts_wid[]"></td><td><input type="text" name="ts_dep[]"></td><td><input type="text" name="ts_t[]"></td><td><input type="text" name="ts_desc[]"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addTumourRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-cubes-stacked"></i> Lymph Node</h3>
+        <table class="compact-table" id="lymphTable" style="background: #fff; border: 1px solid var(--border-color);">
+            <thead><tr style="background: #f8f9fa;"><th>LN Group</th><th>Length (cm)</th><th>Width (cm)</th><th>Depth (cm)</th><th>N Stage</th><th>Description</th><th></th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="ln_grp[]"></td><td><input type="text" name="ln_len[]"></td><td><input type="text" name="ln_wid[]"></td><td><input type="text" name="ln_dep[]"></td><td><input type="text" name="ln_n[]"></td><td><input type="text" name="ln_desc[]"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addLymphRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-layer-group"></i> Staging Details</h3>
+        <table class="compact-table" id="stageTable" style="background: #fff; border: 1px solid var(--border-color);">
+            <thead><tr style="background: #f8f9fa;"><th>Date</th><th>Type</th><th>T</th><th>N</th><th>M</th><th>Stage</th><th>Comment</th><th></th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]" placeholder="Clinical, Pathological"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addStageRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
+
+        <div style="margin-top: 40px; text-align: center;"><button type="submit" class="btn-primary" style="width: 100%; max-width: 350px;"><i class="fa-solid fa-cloud-arrow-up"></i> Save Diagnosis Record</button></div>
+    </form>
+</div>
+
+<script>
+    // Metastasis Logic
+    function toggleMeta() {
+        let status = document.getElementById('meta_status').value;
+        let sec = document.getElementById('meta_section');
+        if (status === 'Present') { sec.style.display = 'block'; } 
+        else { sec.style.display = 'none'; document.getElementById('meta_count').value = ''; document.getElementById('organs_container').innerHTML = ''; }
+    }
+    function generateOrgans() {
+        let count = parseInt(document.getElementById('meta_count').value) || 0;
+        let container = document.getElementById('organs_container');
+        container.innerHTML = '';
+        for(let i=0; i<count; i++) {
+            container.innerHTML += `<input type="text" name="meta_organs[]" placeholder="Name of Organ ${i+1}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:3px;">`;
+        }
+    }
+
+    // Dynamic Tables
+    function addTumourRow() { let r = document.getElementById('tumourTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="ts_len[]"></td><td><input type="text" name="ts_wid[]"></td><td><input type="text" name="ts_dep[]"></td><td><input type="text" name="ts_t[]"></td><td><input type="text" name="ts_desc[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addLymphRow() { let r = document.getElementById('lymphTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="ln_grp[]"></td><td><input type="text" name="ln_len[]"></td><td><input type="text" name="ln_wid[]"></td><td><input type="text" name="ln_dep[]"></td><td><input type="text" name="ln_n[]"></td><td><input type="text" name="ln_desc[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addStageRow() { let r = document.getElementById('stageTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); }
+
+    // Universal Date Restrictor for Disease & Staging
+    document.addEventListener('focusin', function(e) {
+        // Check if the element the user just clicked/focused on is a date input
+        if (e.target && e.target.type === 'date') {
+            // Calculate today's date adjusted for local timezone
+            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            
+            // Instantly apply the maximum date restriction
+            e.target.setAttribute('max', todayLocal);
+        }
+    });
+</script>
+{% endblock %}

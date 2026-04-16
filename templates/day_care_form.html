@@ -1,0 +1,293 @@
+{% extends "base_layout.html" %}
+{% block title %}Day Care Session{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-bed-pulse" style="color: #0f9d58; margin-right: 10px;"></i>Cycle {{ cycle }}, Day {{ day }} Administration</h2>
+    <a href="{{ url_for('day_care', patient_id=patient.id) }}" class="btn-secondary">Cancel Session</a>
+</div>
+
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
+    <form id="dayCareForm" action="{{ url_for('day_care_session', patient_id=patient.id, proto_id=p_proto.id, cycle=cycle, day=day) }}" method="POST">
+        
+        <input type="hidden" id="hidden_age" value="{{ patient.age }}">
+        <input type="hidden" id="hidden_gender" value="{{ patient.gender }}">
+
+        <div style="background: #fff; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            <label style="font-weight: 600; color: #1f1f1f;"><i class="fa-solid fa-hospital-user" style="color: var(--primary-accent); margin-right: 8px;"></i>Chemo Administered At:</label>
+            <select name="administered_at" id="administered_at" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 350px; margin-left: 10px;" onchange="toggleAdminLocation()">
+                <option value="BB Precision Oncocare Centre" selected>BB Precision Oncocare Centre (Internal)</option>
+                <option value="At other centre">At other centre (Outside Admin)</option>
+            </select>
+        </div>
+
+        <div id="external_admin_flow" style="display: none; text-align: center; padding: 50px; border: 1px solid var(--border-color); border-radius: 8px; background: #fdfdfd;">
+            <i class="fa-solid fa-truck-medical fa-3x" style="color: #d93025; margin-bottom: 15px; opacity: 0.8;"></i>
+            <h3 style="color: #d93025; margin-bottom: 10px;">Outside Administration Selected</h3>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Detailed administration tracking and discharge summaries are disabled for sessions completed at other centers. Clicking Finalize will simply mark this cycle/day as complete so you can proceed to the next scheduled visit.</p>
+            <button type="submit" class="btn-primary" style="background: #d93025; border-color: #d93025; font-size: 1.1rem; padding: 12px 25px;"><i class="fa-solid fa-check-double"></i> Mark as Administered Outside</button>
+        </div>
+
+        <div id="internal_admin_flow">
+            <div id="secA" style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+                <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between;">
+                    <h3 style="color: #0f9d58; margin: 0;">A. Assessment and Consent</h3>
+                    <button type="button" class="btn-secondary" style="padding: 2px 10px; font-size: 0.8rem;" onclick="revertTo('secA')"><i class="fa-solid fa-pen"></i> Edit</button>
+                </div>
+                <div style="padding: 20px;" class="grid-form">
+                    <div class="form-group"><label>Planned Date</label><input type="date" name="planned_date" value="{{ planned_date }}" style="width:100%; padding:8px; border:1px solid #ccc; background:#e8eaed;" readonly></div>
+                    <div class="form-group"><label>Actual Date *</label><input type="date" name="actual_date" id="actual_date" style="width:100%; padding:8px; border:1px solid #ccc;" required></div>
+                    <div class="form-group"><label>Delay</label><select name="is_delayed" id="is_delayed" style="width:100%; padding:8px; border:1px solid #ccc;" onchange="toggleDelay()"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                    <div class="form-group"><label>Delay Reason</label><input type="text" name="delay_reason" id="delay_reason" style="width:100%; padding:8px; border:1px solid #ccc;" disabled></div>
+                    
+                    <div class="form-group full-width" style="background: #fff3e0; padding: 15px; border-radius: 4px; border: 1px solid #fce8b2;">
+                        <strong>Protocol Pre-requisites:</strong> {{ c_proto.prerequisites or "None specified" }}<br><br>
+                        <strong>Biochemistry (Last 15 Days):</strong><br>
+                        {% for b in biochem %} &bull; {{ b.date.strftime('%d-%b') }} | {{ b.test }} : {{ b.result }} <br> {% else %} <span style="color:#d93025;">No recent labs found.</span> {% endfor %}
+                    </div>
+                    
+                    <div class="form-group"><label>Fitness Confirmed? *</label><select name="fitness_confirmed" id="fitness" style="width:100%; padding:8px; border:1px solid #ccc;" required><option value="" disabled selected>Select</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                    <div class="form-group"><label>Consent Obtained? *</label><select name="consent_obtained" id="consent" style="width:100%; padding:8px; border:1px solid #ccc;" required><option value="" disabled selected>Select</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+                    
+                    <div class="form-group full-width" style="text-align: right;"><button type="button" class="btn-primary" onclick="unlockSec('secB')">Confirm Assessment &rarr;</button></div>
+                </div>
+            </div>
+
+            <div id="secB" style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; opacity: 0.4; pointer-events: none;">
+                <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between;">
+                    <h3 style="color: #1a73e8; margin: 0;">B. Chemo Drugs Plan</h3>
+                    <button type="button" class="btn-secondary" style="padding: 2px 10px; font-size: 0.8rem;" onclick="revertTo('secB')"><i class="fa-solid fa-pen"></i> Edit</button>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e8f0fe; padding: 15px; border-radius: 6px;">
+                        <div><label style="font-size: 0.85rem; font-weight: 600;">Height (cm)</label><input type="number" step="0.1" id="h_in" value="{{ height }}" style="padding:6px; border:1px solid #ccc; width: 100px;" oninput="runCalculators()"></div>
+                        <div><label style="font-size: 0.85rem; font-weight: 600;">Weight (kg) *</label><input type="number" step="0.1" name="weight" id="w_in" style="padding:6px; border:1px solid #ccc; width: 100px;" required oninput="runCalculators()"></div>
+                        <div><label style="font-size: 0.85rem; font-weight: 600; color: #1a73e8;">BSA (sqm)</label><input type="text" name="bsa" id="bsa_out" style="padding:6px; border:1px solid #1a73e8; background:#fff; width: 100px;" readonly></div>
+                        <div style="border-left: 2px solid #ccc; margin: 0 10px;"></div>
+                        <div><label style="font-size: 0.85rem; font-weight: 600;">Serum Cr (mg/dL)</label><input type="number" step="0.01" name="serum_creatinine" id="cr_in" style="padding:6px; border:1px solid #ccc; width: 120px;" oninput="runCalculators()"></div>
+                        <div><label style="font-size: 0.85rem; font-weight: 600; color: #1a73e8;">CrCl (ml/min)</label><input type="text" name="crcl" id="crcl_out" style="padding:6px; border:1px solid #1a73e8; background:#fff; width: 100px;" readonly></div>
+                    </div>
+                    
+                    <table class="compact-table" id="planTable" style="border: 1px solid var(--border-color);">
+                        <thead style="background: #e8f0fe;"><tr><th>Type</th><th>Form</th><th>Drug</th><th>Multiplier</th><th>Base Dose</th><th>Calc Dose</th><th>%</th><th>Final Dose</th><th>Mod Reason</th><th>Note</th></tr></thead>
+                        <tbody>
+                            {% for d in protocol_drugs %}
+                            <tr>
+                                <td>{{ d.type }}</td><td>{{ d.form }}</td>
+                                <td><input type="hidden" name="dp_name[]" value="{{ d.name }}"><strong>{{ d.name }}</strong></td>
+                                <td>
+                                    <input type="hidden" class="drug_mul" value="{{ d.multiplier|default('BSA') }}">
+                                    <input type="hidden" class="drug_auc" value="{{ d.auc|default('0') }}">
+                                    <span class="badge badge-grey">{{ d.multiplier|default('BSA') }}{% if d.multiplier == 'AUC' %} ({{ d.auc }}){% endif %}</span>
+                                </td>
+                                <td><input type="text" class="base_dose" value="{{ d.dose }}" style="width:60px;" readonly></td>
+                                <td><input type="text" name="dp_calc[]" class="calc_dose" style="width:70px;" readonly></td>
+                                <td><input type="number" name="dp_pct[]" value="100" style="width:60px;" oninput="recalcRow(this)"></td>
+                                <td><input type="text" name="dp_final[]" class="final_dose" style="width:80px;" readonly></td>
+                                <td><input type="text" name="dp_mod[]" placeholder="Reason"></td>
+                                <td><span style="font-size:0.75rem;">{{ d.note }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div style="text-align: right; margin-top: 15px;"><button type="button" class="btn-primary" onclick="unlockSec('secC')">Confirm Drug Plan &rarr;</button></div>
+                </div>
+            </div>
+
+            <div id="secC" style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; opacity: 0.4; pointer-events: none;">
+                <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between;">
+                    <h3 style="color: #d93025; margin: 0;">C. Chemo Administration</h3>
+                    <button type="button" class="btn-secondary" style="padding: 2px 10px; font-size: 0.8rem;" onclick="revertTo('secC')"><i class="fa-solid fa-pen"></i> Edit</button>
+                </div>
+                <div style="padding: 20px;">
+                    <table class="compact-table" id="adminTable" style="border: 1px solid var(--border-color);">
+                        <thead style="background: #fce8e6;"><tr><th>Drug</th><th>Final Dose</th><th>Start Time</th><th>End Time</th><th>Lot #</th><th>Expiry</th><th>Comment</th></tr></thead>
+                        <tbody>
+                            {% for d in protocol_drugs %}
+                            <tr>
+                                <td><input type="hidden" name="ad_name[]" value="{{ d.name }}"><strong>{{ d.name }}</strong></td>
+                                <td><span class="ad_disp_dose" style="color:#d93025; font-weight:bold;"></span></td>
+                                <td><input type="time" name="ad_start[]"></td><td><input type="time" name="ad_end[]"></td>
+                                <td><input type="text" name="ad_lot[]" style="width:80px;"></td><td><input type="month" name="ad_exp[]"></td>
+                                <td><input type="text" name="ad_comm[]"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: 600; color: #d93025;"><input type="checkbox" id="confirm_admin_cb"> I confirm Administration is Complete</label>
+                        <button type="button" class="btn-primary" onclick="unlockSec('secDE')">Proceed to Post-Exam &rarr;</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="secDE" style="opacity: 0.4; pointer-events: none;">
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+                    <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color);"><h3 style="color: #673ab7; margin: 0;">D. Post Chemo Examination</h3></div>
+                    <div style="padding: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" name="post_temp" placeholder="Temp (°C/°F)" style="padding:6px; border:1px solid #ccc; width:120px;">
+                            <input type="text" name="post_pulse" placeholder="Pulse (/min)" style="padding:6px; border:1px solid #ccc; width:120px;">
+                            <input type="text" name="post_bp" placeholder="BP (mmHg)" style="padding:6px; border:1px solid #ccc; width:120px;">
+                            <input type="text" name="post_rr" placeholder="RR (/min)" style="padding:6px; border:1px solid #ccc; width:120px;">
+                            <input type="text" name="post_spo2" placeholder="SpO2 (%)" style="padding:6px; border:1px solid #ccc; width:120px;">
+                        </div>
+                        
+                        <strong>Physical Exam</strong>
+                        <table class="compact-table" id="peTable" style="margin-bottom: 15px;">
+                            <tbody><tr><td><input type="text" name="pe_sys[]" placeholder="System"></td><td><input type="text" name="pe_find[]" placeholder="Finding"></td><td><input type="text" name="pe_comm[]" placeholder="Comment"></td><td><button type="button" onclick="this.parentNode.parentNode.remove()">X</button></td></tr></tbody>
+                        </table><button type="button" onclick="addPeRow()" style="margin-bottom:15px;">+ Add Exam</button>
+                        <br>
+                        <strong>Toxicities</strong>
+                        <table class="compact-table" id="txTable">
+                            <tbody><tr><td><input type="text" name="tx_name[]" placeholder="Toxicity Name"></td><td><input type="text" name="tx_grade[]" placeholder="Grade (1-4)"></td><td><button type="button" onclick="this.parentNode.parentNode.remove()">X</button></td></tr></tbody>
+                        </table><button type="button" onclick="addTxRow()">+ Add Toxicity</button>
+                    </div>
+                </div>
+
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+                    <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color);"><h3 style="color: #000; margin: 0;">E. Discharge Advice</h3></div>
+                    <div style="padding: 20px;">
+                        <textarea name="discharge_notes" rows="4" style="width:100%; padding:10px; border:1px solid #ccc; margin-bottom: 10px;">{{ c_proto.discharge_instructions }}&#13;&#10;&#13;&#10;Cycle Notes: {{ c_proto.cycle_notes }}</textarea>
+                        <input type="hidden" name="discharge_meds" value="{{ c_proto.take_home_meds }}">
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Take home medications have been pulled automatically from the Master Protocol.</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <button type="submit" class="btn-primary" style="font-size: 1.2rem; padding: 15px 30px;"><i class="fa-solid fa-file-signature"></i> Finalize & Generate Summary</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate today's date adjusted for local timezone
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+        
+        let actualDateInput = document.getElementById('actual_date');
+        if (actualDateInput) {
+            actualDateInput.value = todayLocal;
+            actualDateInput.setAttribute('max', todayLocal); // Prevents future dates
+        }
+    });
+
+    function toggleAdminLocation() {
+        let val = document.getElementById('administered_at').value;
+        if(val === 'At other centre') {
+            document.getElementById('internal_admin_flow').style.display = 'none';
+            document.getElementById('external_admin_flow').style.display = 'block';
+            document.getElementById('actual_date').required = false; document.getElementById('fitness').required = false; document.getElementById('consent').required = false; document.getElementById('w_in').required = false;
+        } else {
+            document.getElementById('internal_admin_flow').style.display = 'block';
+            document.getElementById('external_admin_flow').style.display = 'none';
+            document.getElementById('actual_date').required = true; document.getElementById('fitness').required = true; document.getElementById('consent').required = true; document.getElementById('w_in').required = true;
+        }
+    }
+
+    function toggleDelay() {
+        let isD = document.getElementById('is_delayed').value;
+        let dR = document.getElementById('delay_reason');
+        if(isD === 'Yes') { dR.disabled = false; dR.required = true; } else { dR.disabled = true; dR.value = ''; dR.required = false; }
+    }
+
+    function revertTo(secId) {
+        let secs = ['secA', 'secB', 'secC', 'secDE'];
+        let targetIdx = secs.indexOf(secId);
+        for(let i=0; i<secs.length; i++) {
+            let el = document.getElementById(secs[i]);
+            if(i <= targetIdx) { el.style.opacity = '1'; el.style.pointerEvents = 'auto'; } 
+            else { el.style.opacity = '0.4'; el.style.pointerEvents = 'none'; }
+        }
+        document.getElementById('confirm_admin_cb').checked = false;
+    }
+
+    function unlockSec(targetSec) {
+        if(targetSec === 'secB') {
+            if(document.getElementById('fitness').value !== 'Yes' || document.getElementById('consent').value !== 'Yes') { alert("Fitness and Consent MUST be confirmed to proceed."); return; }
+            runCalculators();
+        }
+        if(targetSec === 'secC') {
+            let finals = document.getElementsByClassName('final_dose');
+            let disp = document.getElementsByClassName('ad_disp_dose');
+            for(let i=0; i<finals.length; i++) { disp[i].innerText = finals[i].value; }
+        }
+        if(targetSec === 'secDE') {
+            if(!document.getElementById('confirm_admin_cb').checked) { alert("You must check the confirmation box."); return; }
+        }
+        
+        let prevSec = (targetSec === 'secB') ? 'secA' : (targetSec === 'secC' ? 'secB' : 'secC');
+        document.getElementById(prevSec).style.opacity = '0.5'; document.getElementById(prevSec).style.pointerEvents = 'none';
+        document.getElementById(targetSec).style.opacity = '1'; document.getElementById(targetSec).style.pointerEvents = 'auto';
+    }
+
+    // Comprehensive Dynamic Calculator Logic
+    function runCalculators() {
+        // Fetch inputs
+        let h = parseFloat(document.getElementById('h_in').value);
+        let w = parseFloat(document.getElementById('w_in').value);
+        let cr = parseFloat(document.getElementById('cr_in').value);
+        let age = parseInt(document.getElementById('hidden_age').value) || 0;
+        let gender = document.getElementById('hidden_gender').value;
+
+        let bsa = 0;
+        if(h>0 && w>0) {
+            bsa = Math.sqrt((h*w)/3600);
+            document.getElementById('bsa_out').value = bsa.toFixed(2);
+        } else {
+            document.getElementById('bsa_out').value = '';
+        }
+
+        let crcl = 0;
+        if (w>0 && cr>0 && age>0) {
+            crcl = ((140 - age) * w) / (72 * cr);
+            if (gender.toLowerCase() === 'female') { crcl *= 0.85; }
+            document.getElementById('crcl_out').value = crcl.toFixed(2);
+        } else {
+            document.getElementById('crcl_out').value = '';
+        }
+
+        // Apply logic to Drug Rows
+        let bases = document.getElementsByClassName('base_dose');
+        let calcs = document.getElementsByClassName('calc_dose');
+        let pcts = document.getElementsByName('dp_pct[]');
+        let finals = document.getElementsByClassName('final_dose');
+        let muls = document.getElementsByClassName('drug_mul');
+        let aucs = document.getElementsByClassName('drug_auc');
+
+        for(let i=0; i<bases.length; i++) {
+            let num = parseFloat(bases[i].value.replace(/[^\d.-]/g, ''));
+            let mul = muls[i] ? muls[i].value : 'BSA';
+            let auc = aucs[i] ? parseFloat(aucs[i].value) : 0;
+
+            if(!isNaN(num)) {
+                let calc = 0;
+                if (mul === 'BSA') calc = num * bsa;
+                else if (mul === 'Per Kg') calc = num * w;
+                else if (mul === 'Fixed') calc = num * 1;
+                else if (mul === 'AUC') calc = num * auc; 
+
+                calcs[i].value = (calc > 0) ? calc.toFixed(2) : '';
+                
+                let pct = parseFloat(pcts[i].value) || 0;
+                finals[i].value = (calc > 0) ? (calc * (pct/100)).toFixed(2) : '';
+            } else {
+                calcs[i].value = bases[i].value;
+                finals[i].value = bases[i].value;
+            }
+        }
+    }
+
+    function recalcRow(input) {
+        let row = input.parentNode.parentNode;
+        let calc = parseFloat(row.querySelector('.calc_dose').value); let pct = parseFloat(input.value);
+        if(!isNaN(calc) && !isNaN(pct)) { row.querySelector('.final_dose').value = (calc * (pct/100)).toFixed(2); }
+    }
+
+    function addPeRow() { let r = document.getElementById('peTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="pe_sys[]" placeholder="System"></td><td><input type="text" name="pe_find[]" placeholder="Finding"></td><td><input type="text" name="pe_comm[]" placeholder="Comment"></td><td><button type="button" onclick="this.parentNode.parentNode.remove()">X</button></td>`; }
+    function addTxRow() { let r = document.getElementById('txTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="tx_name[]" placeholder="Toxicity Name"></td><td><input type="text" name="tx_grade[]" placeholder="Grade (1-4)"></td><td><button type="button" onclick="this.parentNode.parentNode.remove()">X</button></td>`; }
+</script>
+{% endblock %}

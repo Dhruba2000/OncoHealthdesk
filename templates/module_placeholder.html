@@ -1,0 +1,9 @@
+{% extends "base_layout.html" %}
+{% block title %}{{ module_name }}{% endblock %}
+{% block content %}
+<div class="panel-card" style="text-align: center; padding: 60px 20px; border: 2px dashed var(--border-color);">
+    <i class="fa-solid fa-screwdriver-wrench fa-3x" style="color: var(--text-muted); margin-bottom: 20px;"></i>
+    <h2 style="color: var(--primary-accent); margin-bottom: 10px;">{{ module_name }} Module</h2>
+    <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 500px; margin: 0 auto;">This clinical data module is currently undergoing structural scaffolding and UI integration.</p>
+</div>
+{% endblock %}

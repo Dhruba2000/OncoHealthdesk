@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - BB Precision Oncocare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+        
+        .login-wrapper { display: flex; height: 100vh; }
+        
+        /* Left Side: Image scaled down to 45% of the container */
+        .login-image {
+            flex: 1; 
+            background-color: #ffffff;
+            background-image: url("{{ url_for('static', filename='login_bg.jpg') }}");
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: 75%; 
+            border-right: 1px solid #e0e0e0;
+        }
+
+        /* Right Side: Form & Branding (50% Width) */
+        .login-form-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            padding: 40px;
+            position: relative;
+        }
+        
+        .login-card { width: 100%; max-width: 400px; }
+        
+        /* Shifted Brand Logo & Text (Logo -> HealthDesk -> Clinic) */
+        .brand-header { text-align: center; margin-bottom: 35px; }
+        .brand-header img { max-width: 70px; max-height: 70px; margin-bottom: 15px; object-fit: contain; }
+        .brand-header h1 { color: #1a73e8; margin: 0 0 5px 0; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+        .brand-header h2 { color: #333; margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+        .brand-header p { color: #5f6368; margin: 0; font-size: 0.95rem; font-weight: 500; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 0.9rem; }
+        
+        /* Input Field with Embedded Icons */
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #888; font-size: 1.1rem; }
+        .input-wrapper input { width: 100%; padding: 12px 12px 12px 42px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.3s; }
+        .input-wrapper input:focus { border-color: #1a73e8; outline: none; }
+        
+        .btn-login { width: 100%; padding: 14px; background-color: #1a73e8; color: #fff; border: none; border-radius: 4px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
+        .btn-login:hover { background-color: #1558d6; }
+
+        .login-footer { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 0.8rem; color: #999; }
+
+        @media (max-width: 900px) {
+            .login-wrapper { flex-direction: column; }
+            .login-image { flex: 1; border-right: none; min-height: 250px; }
+            .login-form-container { flex: 1; border-radius: 20px 20px 0 0; margin-top: -20px; z-index: 10; }
+            .login-footer { position: relative; margin-top: 40px; bottom: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-image"></div>
+
+        <div class="login-form-container">
+            <div class="login-card">
+                
+                <div class="brand-header">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="BB Precision Logo" onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='block'; margin:'0 auto 15px auto';">
+                    <i id="fallback-icon" class="fa-solid fa-notes-medical fa-3x" style="color: #1a73e8; display: none; margin-bottom: 15px;"></i>
+                    
+                    <h1>Onco HealthDesk</h1>
+                    <h2>BB Precision Oncocare Centre</h2>
+                    <p>Empowering Precision Oncology Care</p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" name="username" placeholder="Enter your username" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" name="password" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login">Secure Login</button>
+                </form>
+            </div>
+
+            <div class="login-footer">
+                Copyright © Ytal Tech Solutions & Services LLP | V 1.0.0
+            </div>
+        </div>
+    </div>
+</body>
+</html>

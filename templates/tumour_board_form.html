@@ -1,0 +1,117 @@
+{% extends "base_layout.html" %}
+{% block title %}Tumour Board Discussion{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 15px;">
+    <h2><i class="fa-solid fa-users-viewfinder" style="color: #673ab7; margin-right: 10px;"></i>Tumour Board Review</h2>
+    <a href="{{ url_for('tumour_board', patient_id=patient.id) }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div style="display: grid; grid-template-columns: 45% 55%; gap: 20px; height: 80vh;">
+    
+    <div style="border: 1px solid var(--border-color); border-radius: 8px; background: #fdfdfd; overflow-y: auto; padding: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);">
+        <h3 style="color: var(--text-dark); margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; position: sticky; top: -20px; background: #fdfdfd; z-index: 10;"><i class="fa-solid fa-file-medical"></i> Patient Overview</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #d93025; margin-bottom: 8px;">Diagnosis & Staging</h4>
+            {% if disease %}
+                <div style="font-size: 0.9rem; margin-bottom: 5px;"><strong>{{ disease.site }}</strong> ({{ disease.date.strftime('%d-%b-%Y') if disease.date else '' }})<br>{{ disease.desc }}</div>
+                <div style="font-size: 0.85rem; color: #d93025; font-weight: 600; margin-bottom: 5px;">Metastasis: {{ disease.meta_status }} {% if disease.meta_status == 'Present' %}({{ disease.meta_organs | join(', ') }}){% endif %}</div>
+                {% if disease.staging %}
+                <table class="compact-table" style="background: #fff; border: 1px solid #eee; margin-top: 5px;">
+                    <thead style="background: #f8f9fa;"><tr><th>Date</th><th>T</th><th>N</th><th>M</th><th>Stage</th></tr></thead>
+                    <tbody>{% for st in disease.staging %}<tr><td>{{ st.date }}</td><td>{{ st.t }}</td><td>{{ st.n }}</td><td>{{ st.m }}</td><td><strong>{{ st.stage }}</strong></td></tr>{% endfor %}</tbody>
+                </table>
+                {% endif %}
+            {% else %} <span style="font-size: 0.85rem; color: #999;">No diagnosis recorded.</span> {% endif %}
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #0f9d58; margin-bottom: 8px;">Treatment History</h4>
+            {% if med_therapies %}
+            <table class="compact-table" style="background: #fff; border: 1px solid #eee; margin-bottom: 10px;">
+                <thead style="background: #e6f4ea;"><tr><th>Start Date</th><th>Drug (Type)</th><th>Line</th><th>Resp.</th></tr></thead>
+                <tbody>{% for m in med_therapies %}<tr><td>{{ m.start }}</td><td><strong>{{ m.drug }}</strong> ({{ m.category }})</td><td>{{ m.line }}</td><td>{{ m.response }}</td></tr>{% endfor %}</tbody>
+            </table>
+            {% endif %}
+            {% if surgeries %}<div style="font-size: 0.85rem; margin-bottom: 5px;"><strong>Surgeries:</strong> {% for s in surgeries %}{{ s.name }} ({{ s.date }}){% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+            {% if rt_list %}<div style="font-size: 0.85rem; margin-bottom: 5px;"><strong>Radiotherapy:</strong> {% for r in rt_list %}{{ r.tech }} on {{ r.organs }} ({{ r.date }}){% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+            {% if not med_therapies and not surgeries and not rt_list %}<span style="font-size: 0.85rem; color: #999;">No treatments recorded.</span>{% endif %}
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #673ab7; margin-bottom: 8px;">Key Investigations</h4>
+            <div style="font-size: 0.85rem;">
+                {% for c in cyto %}<div><strong>Cyto ({{ c.date }}):</strong> {{ c.interpretation }} {% if c.file %}<a href="{{ url_for('static', filename='uploads/' + c.file) }}" target="_blank">[PDF]</a>{% endif %}</div>{% endfor %}
+                {% for h in histo %}<div><strong>Histo ({{ h.date }}):</strong> {{ h.interpretation }} {% if h.file %}<a href="{{ url_for('static', filename='uploads/' + h.file) }}" target="_blank">[PDF]</a>{% endif %}</div>{% endfor %}
+                {% for b in bio %}<div><strong>Bio ({{ b.date }}):</strong> {{ b.biomarker }} - <strong>{{ b.status }}</strong> {% if b.file %}<a href="{{ url_for('static', filename='uploads/' + b.file) }}" target="_blank">[PDF]</a>{% endif %}</div>{% endfor %}
+                {% for r in radiology %}<div><strong>Rad ({{ r.date }}):</strong> {{ r.test }} - {{ r.result }} {% if r.file %}<a href="{{ url_for('static', filename='uploads/' + r.file) }}" target="_blank">[PDF]</a>{% endif %}</div>{% endfor %}
+            </div>
+            {% if not cyto and not histo and not bio and not radiology %}<span style="font-size: 0.85rem; color: #999;">No key investigations recorded.</span>{% endif %}
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #fbbc04; margin-bottom: 8px;">History & OPD</h4>
+            {% if active_history %}<ul style="font-size: 0.85rem; padding-left: 20px; margin-bottom: 10px;">{% for k, v in active_history.items() %}<li><strong>{{ k }}:</strong> {{ v }}</li>{% endfor %}</ul>{% endif %}
+            {% if complaints %}<div style="font-size: 0.85rem;"><strong>Recent Complaints:</strong> {% for c in complaints %}{{ c.complaint }} ({{ c.frequency }}){% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+        </div>
+    </div>
+
+    <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; overflow-y: auto;">
+        <form action="{{ url_for('tumour_board_new', patient_id=patient.id) }}" method="POST">
+            
+            <div class="form-group" style="max-width: 250px; margin-bottom: 25px;">
+                <label style="color: #673ab7;">Date of Meeting *</label>
+                <div class="input-with-icon"><i class="fa-solid fa-calendar" style="color: #673ab7;"></i><input type="date" name="board_date" id="board_date" required></div>
+            </div>
+
+            <h4 style="color: var(--text-dark); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Board Members</h4>
+            <table class="compact-table" id="membersTable" style="margin-bottom: 15px; border: 1px solid #ccc;">
+                <thead style="background: #f8f9fa;"><tr><th>Name</th><th>Specialty</th><th></th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" name="tb_name[]" placeholder="Dr. First Last"></td>
+                        <td>
+                            <select name="tb_spec[]">
+                                <option value="" disabled selected>Select</option>
+                                <option value="Medical Oncology">Medical Oncology</option><option value="Surgical Oncology">Surgical Oncology</option><option value="Radiation Oncology">Radiation Oncology</option>
+                                <option value="Pathologist">Pathologist</option><option value="Molecular Pathology">Molecular Pathology</option><option value="Genomic Scientist">Genomic Scientist</option>
+                                <option value="Researcher">Researcher</option><option value="Other">Other</option>
+                            </select>
+                        </td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" onclick="addMemberRow()" style="font-size: 0.85rem; margin-bottom: 25px;">+ Add Member</button>
+
+            <div class="form-group full-width" style="margin-bottom: 25px;">
+                <label style="color: #1a73e8;">Discussion Notes</label>
+                <textarea name="discussion" rows="6" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem;"></textarea>
+            </div>
+
+            <div class="form-group full-width" style="margin-bottom: 30px;">
+                <label style="color: #d93025;">Final Recommendations / Next Steps</label>
+                <textarea name="next_steps" rows="4" style="width: 100%; padding: 12px; border: 1px solid #f9d2ce; background: #fdf6f5; border-radius: 4px; font-size: 0.95rem; font-weight: 500;"></textarea>
+            </div>
+
+            <div style="text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+                <button type="submit" class="btn-primary" style="background: #673ab7; border-color: #673ab7; width: 100%; max-width: 300px; font-size: 1.1rem; padding: 12px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Tumour Board
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('board_date').valueAsDate = new Date();
+
+    function addMemberRow() {
+        let r = document.getElementById('membersTable').getElementsByTagName('tbody')[0].insertRow();
+        r.innerHTML = `<td><input type="text" name="tb_name[]" placeholder="Dr. First Last"></td><td><select name="tb_spec[]"><option value="" disabled selected>Select</option><option value="Medical Oncology">Medical Oncology</option><option value="Surgical Oncology">Surgical Oncology</option><option value="Radiation Oncology">Radiation Oncology</option><option value="Pathologist">Pathologist</option><option value="Molecular Pathology">Molecular Pathology</option><option value="Genomic Scientist">Genomic Scientist</option><option value="Researcher">Researcher</option><option value="Other">Other</option></select></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+    }
+    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); }
+</script>
+{% endblock %}

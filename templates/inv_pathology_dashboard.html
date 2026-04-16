@@ -1,0 +1,96 @@
+{% extends "base_layout.html" %}
+{% block title %}Pathology - Investigations{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        @page { margin: 1cm; size: auto; }
+        body { background: #fff !important; }
+        .sidebar, .topbar, .main-footer, .no-print, .btn-primary { display: none !important; }
+        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; background: #fff !important; }
+        .content-scroll { overflow: visible !important; padding: 0 !important; height: auto !important; }
+        .panel-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+        .patient-banner { background: #f8f9fa !important; border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 25px !important; page-break-after: avoid; }
+        .patient-banner * { color: #000 !important; }
+        .data-table { border-collapse: collapse !important; width: 100% !important; }
+        .data-table th, .data-table td { border: 1px solid #ccc !important; padding: 8px !important; color: #000 !important; }
+    }
+</style>
+
+<div class="no-print" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+    <button onclick="window.print()" class="btn-primary" style="background-color: #d93025; border-color: #d93025;"><i class="fa-solid fa-file-pdf"></i> Save History as PDF</button>
+</div>
+
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-microscope" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;"><strong>Reg No:</strong> {{ patient.registration_number }} | <strong>Age:</strong> {{ patient.age }}</p>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header no-print">
+        <h2>Pathology Records</h2>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('inv_pathology_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Log New Report</a>
+        </div>
+    </div>
+    <div style="margin-top: 15px;">
+        {% for rec in records %}
+        <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+            <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+                <strong>Logged on: {{ rec.date.strftime('%d-%b-%Y') }}</strong>
+            </div>
+            <div style="padding: 20px;">
+                {% if rec.cytology %}
+                <h4>Cytology</h4>
+                <table class="data-table" style="margin-bottom: 20px;">
+                    <thead><tr><th>Date</th><th>Specimen</th><th>Interpretation</th><th class="no-print">Attachment</th></tr></thead>
+                    <tbody>
+                        {% for c in rec.cytology %}
+                        <tr>
+                            <td>{{ c.date }}</td><td>{{ c.specimen }}</td><td>{{ c.interpretation }}</td>
+                            <td class="no-print">
+                                {% if c.file %}<a href="{{ url_for('static', filename='uploads/' + c.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ c.file }}</a>{% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                
+                {% if rec.histopathology %}
+                <h4>Histopathology</h4>
+                <table class="data-table" style="margin-bottom: 20px;">
+                    <thead><tr><th>Date</th><th>Type</th><th>Staging / Grading</th><th class="no-print">Attachment</th></tr></thead>
+                    <tbody>
+                        {% for h in rec.histopathology %}
+                        <tr>
+                            <td>{{ h.date }}</td><td>{{ h.type }} ({{ h.site }})</td><td>{{ h.staging }} / {{ h.grading }}</td>
+                            <td class="no-print">{% if h.file %}<a href="{{ url_for('static', filename='uploads/' + h.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ h.file }}</a>{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if rec.biomarker %}
+                <h4>Biomarkers</h4>
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Biomarker</th><th>Status</th><th class="no-print">Attachment</th></tr></thead>
+                    <tbody>
+                        {% for b in rec.biomarker %}
+                        <tr>
+                            <td>{{ b.date }}</td><td>{{ b.biomarker }}</td><td>{{ b.status }}</td>
+                            <td class="no-print">{% if b.file %}<a href="{{ url_for('static', filename='uploads/' + b.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ b.file }}</a>{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

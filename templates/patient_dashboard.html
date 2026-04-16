@@ -1,0 +1,60 @@
+{% extends "base_layout.html" %}
+{% block title %}Patient Registry{% endblock %}
+
+{% block content %}
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Patient Registry</h2>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <form action="{{ url_for('patient_dashboard') }}" method="GET" class="search-container" style="display: flex; gap: 10px; max-width: 450px;">
+                <div style="position: relative; flex: 1;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 10px; color: var(--text-muted);"></i>
+                <input type="text" name="search" class="search-input" placeholder="Search by Name or Reg. No..." value="{{ search_query or '' }}" style="width: 100%; padding: 8px 10px 8px 35px; border: 1px solid var(--border-color); border-radius: 4px;">
+                </div>
+                <button type="submit" class="btn-primary" style="padding: 8px 15px;"><i class="fa-solid fa-arrow-right"></i></button>
+                {% if search_query %}
+                 <a href="{{ url_for('patient_dashboard') }}" class="btn-secondary" style="padding: 8px 15px; color: #d93025; border-color: #f1f3f4;"><i class="fa-solid fa-xmark"></i></a>
+                {% endif %}
+            </form>
+
+            <a href="{{ url_for('patient_registration') }}" class="btn-primary"><i class="fa-solid fa-user-plus"></i> New Patient</a>
+            
+            {% if user.role == 'Admin' %}
+                <a href="{{ url_for('export_patients') }}" class="btn-secondary" style="color: #28a745; border-color: #28a745;"><i class="fa-solid fa-file-csv"></i> Export</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th><i class="fa-solid fa-hashtag" style="margin-right: 5px;"></i>Reg. No</th>
+                    <th><i class="fa-solid fa-user" style="margin-right: 5px;"></i>Patient Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Diagnosis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr onclick="window.location.href='{{ url_for('patient_overview', patient_id=p.id) }}'">
+                    <td style="font-weight: 600; color: var(--primary-accent);">{{ p.registration_number }}</td>
+                    <td style="font-weight: 500;">{{ p.first_name }} {{ p.last_name }}</td>
+                    <td>{{ p.age }}</td>
+                    <td>{{ p.gender }}</td>
+                    <td><span class="badge badge-grey">{{ p.primary_diagnosis }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fa-solid fa-folder-open fa-2x" style="margin-bottom: 10px; opacity: 0.5; display: block;"></i>
+                        No patients found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

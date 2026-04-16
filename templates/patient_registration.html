@@ -1,0 +1,190 @@
+{% extends "base_layout.html" %}
+{% block title %}Register New Patient{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-user-plus" style="color: var(--primary-accent); margin-right: 10px;"></i>Register New Patient</h2>
+    <a href="{{ url_for('patient_dashboard') }}" class="btn-secondary">Cancel</a>
+</div>
+
+<div class="panel-card" style="max-width: 1000px; margin: 0 auto; padding: 30px;">
+    <form action="{{ url_for('patient_registration') }}" method="POST">
+        
+        <h3 style="color: var(--primary-accent); border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; margin-bottom: 20px; font-size: 1.1rem;"><i class="fa-regular fa-id-card"></i> 1. Personal & Demographics</h3>
+        <div class="grid-form" style="margin-bottom: 30px;">
+            <div class="form-group"><label>First Name *</label><input type="text" name="first_name" placeholder="First Name" required></div>
+            <div class="form-group"><label>Middle Name</label><input type="text" name="middle_name" placeholder="Middle Name"></div>
+            <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" placeholder="Last Name" required></div>
+            <div class="form-group"><label>Date of Birth *</label><input type="date" id="dob_input" name="dob" required></div>
+            
+            <div class="form-group">
+                <label>Gender *</label>
+                <select name="gender" required>
+                    <option value="" disabled selected>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Blood Group</label>
+                <select name="blood_group">
+                    <option value="">Select</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                </select>
+            </div>
+            
+            <div class="form-group"><label>Religion</label><input type="text" name="religion" placeholder="Religion"></div>
+            <div class="form-group"><label>Education</label><input type="text" name="education" placeholder="Highest Education"></div>
+            
+            <div class="form-group">
+                <label>ID Proof Type</label>
+                <select name="id_proof">
+                    <option value="">Select</option>
+                    <option value="Aadhaar Card">Aadhaar Card</option>
+                    <option value="PAN Card">PAN Card</option>
+                    <option value="Passport">Passport</option>
+                    <option value="Driving Licence">Driving Licence</option>
+                    <option value="Voter ID">Voter ID</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group"><label>ID Proof Number</label><input type="text" name="id_proof_number" placeholder="ID Number"></div>
+        </div>
+
+        <h3 style="color: var(--primary-accent); border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; margin-bottom: 20px; font-size: 1.1rem;"><i class="fa-solid fa-map-location-dot"></i> 2. Contact & Address Details</h3>
+        <div class="grid-form" style="margin-bottom: 30px;">
+            <div class="form-group"><label>Primary Mobile *</label><input type="text" name="mobile_number" placeholder="10-digit Mobile No." required></div>
+            <div class="form-group"><label>Alternate Mobile</label><input type="text" name="alt_mobile_number" placeholder="Alternate No."></div>
+            <div class="form-group full-width"><label>Email Address</label><input type="email" name="email" placeholder="patient@example.com"></div>
+            
+            <div class="form-group"><label>House / Flat No.</label><input type="text" name="address_house" placeholder="House/Flat No."></div>
+            <div class="form-group"><label>Building / Society</label><input type="text" name="address_society" placeholder="Society Name"></div>
+            <div class="form-group"><label>Area / Locality</label><input type="text" name="address_area" placeholder="Locality"></div>
+            <div class="form-group">
+                <label>State *</label>
+                <select name="address_state" id="state_select" required onchange="populateCities()">
+                    <option value="" disabled selected>Select State</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>City *</label>
+                <div id="city_container">
+                    <select name="address_city" id="city_select" required onchange="checkOtherCity()">
+                        <option value="" disabled selected>Select State First</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Pincode</label><input type="text" name="address_pincode" placeholder="Pincode"></div>
+        </div>
+
+        <h3 style="color: var(--primary-accent); border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; margin-bottom: 20px; font-size: 1.1rem;"><i class="fa-solid fa-truck-medical"></i> 3. Emergency Contact</h3>
+        <div class="grid-form" style="margin-bottom: 30px;">
+            <div class="form-group"><label>Emergency Contact Name</label><input type="text" name="emg_contact_name" placeholder="Relative's Name"></div>
+            <div class="form-group"><label>Emergency Mobile</label><input type="text" name="emg_contact_mobile" placeholder="Mobile No."></div>
+        </div>
+
+        <h3 style="color: var(--primary-accent); border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; margin-bottom: 20px; font-size: 1.1rem;"><i class="fa-solid fa-user-doctor"></i> 4. Reference</h3>
+        <div class="grid-form" style="margin-bottom: 20px;">
+            <div class="form-group"><label>Referring Physician Name</label><input type="text" name="ref_physician_name" placeholder="Dr. Name"></div>
+            <div class="form-group"><label>Ref. Physician Contact</label><input type="text" name="ref_physician_contact" placeholder="Clinic/Mobile No."></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+            <button type="submit" class="btn-primary" style="font-size: 1.2rem; padding: 12px 40px;"><i class="fa-solid fa-user-check"></i> Register Patient</button>
+        </div>
+    </form>
+</div>
+<script>
+    // Comprehensive database of Indian States and Major Cities
+    const indiaData = {
+        "Andaman and Nicobar Islands": ["Port Blair", "Other"],
+        "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati", "Rajahmundry", "Other"],
+        "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Other"],
+        "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Other"],
+        "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Other"],
+        "Chandigarh": ["Chandigarh", "Other"],
+        "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Durg", "Other"],
+        "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa", "Other"],
+        "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi", "Other"],
+        "Goa": ["Panaji", "Vasco da Gama", "Margao", "Mapusa", "Other"],
+        "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Other"],
+        "Haryana": ["Faridabad", "Gurugram", "Panipat", "Ambala", "Yamunanagar", "Rohtak", "Hisar", "Other"],
+        "Himachal Pradesh": ["Shimla", "Dharamshala", "Mandi", "Solan", "Other"],
+        "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Other"],
+        "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Deoghar", "Other"],
+        "Karnataka": ["Bengaluru", "Mysuru", "Hubballi-Dharwad", "Mangaluru", "Belagavi", "Other"],
+        "Kerala": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Kollam", "Thrissur", "Kannur", "Other"],
+        "Ladakh": ["Leh", "Kargil", "Other"],
+        "Lakshadweep": ["Kavaratti", "Other"],
+        "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Other"],
+        "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Kalyan-Dombivli", "Vasai-Virar", "Aurangabad", "Navi Mumbai", "Solapur", "Mira-Bhayandar", "Bhiwandi", "Amravati", "Nanded", "Kolhapur", "Other"],
+        "Manipur": ["Imphal", "Other"],
+        "Meghalaya": ["Shillong", "Other"],
+        "Mizoram": ["Aizawl", "Other"],
+        "Nagaland": ["Dimapur", "Kohima", "Other"],
+        "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Brahmapur", "Sambalpur", "Other"],
+        "Puducherry": ["Puducherry", "Ozhukarai", "Karaikal", "Other"],
+        "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda", "Other"],
+        "Rajasthan": ["Jaipur", "Jodhpur", "Kota", "Bikaner", "Ajmer", "Udaipur", "Other"],
+        "Sikkim": ["Gangtok", "Other"],
+        "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirunelveli", "Other"],
+        "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam", "Other"],
+        "Tripura": ["Agartala", "Other"],
+        "Uttar Pradesh": ["Lucknow", "Kanpur", "Ghaziabad", "Agra", "Varanasi", "Meerut", "Prayagraj", "Noida", "Other"],
+        "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Other"],
+        "West Bengal": ["Kolkata", "Howrah", "Asansol", "Siliguri", "Durgapur", "Other"]
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Calculate today's date and lock DOB (Your existing code)
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+        let dobInput = document.getElementById('dob_input');
+        if (dobInput) dobInput.setAttribute('max', todayLocal);
+
+        // 2. Automatically populate the States Dropdown on page load
+        let stateSelect = document.getElementById('state_select');
+        if(stateSelect) {
+            Object.keys(indiaData).forEach(state => {
+                let option = document.createElement('option');
+                option.value = state;
+                option.text = state;
+                stateSelect.appendChild(option);
+            });
+        }
+    });
+
+    // 3. Function to populate Cities when a State is selected
+    function populateCities() {
+        let state = document.getElementById('state_select').value;
+        let cityContainer = document.getElementById('city_container');
+        
+        // Reset container to a fresh select dropdown
+        cityContainer.innerHTML = '<select name="address_city" id="city_select" required onchange="checkOtherCity()"><option value="" disabled selected>Select City</option></select>';
+        let citySelect = document.getElementById('city_select');
+
+        if(state && indiaData[state]) {
+            indiaData[state].forEach(city => {
+                let option = document.createElement('option');
+                option.value = city;
+                option.text = city;
+                citySelect.appendChild(option);
+            });
+        }
+    }
+
+    // 4. Function to change dropdown to a text input if "Other" is selected
+    function checkOtherCity() {
+        let citySelect = document.getElementById('city_select');
+        if(citySelect.value === 'Other') {
+            let container = document.getElementById('city_container');
+            // Transforms the select box into a text box, keeping the same 'name' for the database
+            container.innerHTML = '<input type="text" name="address_city" placeholder="Type city name..." required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">';
+        }
+    }
+</script>
+{% endblock %}

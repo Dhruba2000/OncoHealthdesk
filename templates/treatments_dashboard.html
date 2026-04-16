@@ -1,0 +1,33 @@
+{% extends "base_layout.html" %}
+{% block title %}Treatments{% endblock %}
+{% block content %}
+<div class="patient-banner">
+    <div class="patient-banner-data" style="width: 100%;">
+        <h3><i class="fa-solid fa-syringe" style="color: var(--primary-accent); margin-right: 10px;"></i>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p style="margin-top: 5px;"><strong>Reg No:</strong> {{ patient.registration_number }} | <strong>Diagnosis:</strong> {{ patient.primary_diagnosis }}</p>
+    </div>
+</div>
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Treatment Master Records</h2>
+        <div style="display: flex; gap: 10px;">
+            {% if user.role == 'Admin' %}<a href="{{ url_for('export_treatments') }}" class="btn-secondary" style="color: #28a745; border-color: #28a745;"><i class="fa-solid fa-file-excel"></i> Export</a>{% endif %}
+            <a href="{{ url_for('treatments_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Log Treatment</a>
+        </div>
+    </div>
+    <div style="margin-top: 15px;">
+        {% for rec in records %}
+        <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+            <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid var(--border-color);"><strong>Logged on: {{ rec.date.strftime('%d-%b-%Y') }} by {{ rec.author }}</strong></div>
+            <div style="padding: 20px;">
+                {% if rec.chemo %}<h4>Chemotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.chemo %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
+                {% if rec.immuno %}<h4>Immunotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.immuno %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
+                {% if rec.targeted %}<h4>Targeted Therapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.targeted %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
+                {% if rec.surgery %}<h4>Surgery</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.surgery %}<li><strong>{{ r.name }}</strong> ({{ r.date }}) - {{ r.intent }}, {{ r.approach }}. {% if r.file %}<a href="{{ url_for('static', filename='uploads/' + r.file) }}" target="_blank" style="color:#d93025;"><i class="fa-solid fa-file-pdf"></i> View Notes</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
+                {% if rec.radiotherapy %}<h4>Radiotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.radiotherapy %}<li><strong>{{ r.tech }}</strong> ({{ r.date }}) - {{ r.organs }}. Tot Dose: {{ r.tot_dose }}, Fracs: {{ r.num_frac }}. {% if r.file %}<a href="{{ url_for('static', filename='uploads/' + r.file) }}" target="_blank" style="color:#d93025;"><i class="fa-solid fa-file-pdf"></i> View Notes</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        {% else %} <div style="text-align: center; padding: 40px; color: #999;">No historical treatments logged.</div> {% endfor %}
+    </div>
+</div>
+{% endblock %}

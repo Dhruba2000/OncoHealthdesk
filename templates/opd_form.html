@@ -1,0 +1,302 @@
+{% extends "base_layout.html" %}
+{% block title %}New OPD Consultation{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-stethoscope" style="color: var(--primary-accent); margin-right: 10px;"></i>New Consultation Entry</h2>
+    <a href="{{ url_for('opd_consultations', patient_id=patient.id) }}" class="btn-secondary"><i class="fa-solid fa-arrow-left"></i> Cancel</a>
+</div>
+
+<div class="panel-card" style="max-width: 1100px; margin: 0 auto; padding: 30px;">
+    <form action="{{ url_for('opd_new', patient_id=patient.id) }}" method="POST">
+        
+        <input type="hidden" id="hidden_age" value="{{ patient.age }}">
+        <input type="hidden" id="hidden_gender" value="{{ patient.gender }}">
+
+        <div class="grid-form" style="margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div class="form-group">
+                <label>Date of Visit *</label>
+                <div class="input-with-icon"><i class="fa-solid fa-calendar-day"></i>
+                <input type="date" name="visit_date" id="visit_date" required></div>
+            </div>
+            <div class="form-group">
+                <label>ECOG Performance Status</label>
+                <div class="input-with-icon"><i class="fa-solid fa-person-walking"></i>
+                <select name="ecog">
+                    <option value="" disabled selected>Select Status</option>
+                    <option value="0">0 - Fully active</option>
+                    <option value="1">1 - Restricted in strenuous activity</option>
+                    <option value="2">2 - Ambulatory, capable of selfcare</option>
+                    <option value="3">3 - Limited selfcare, >50% in bed</option>
+                    <option value="4">4 - Completely disabled</option>
+                    <option value="5">5 - Dead</option>
+                </select></div>
+            </div>
+        </div>
+
+        <h3 class="form-section-title"><i class="fa-solid fa-heart-pulse"></i> Vitals & Anthropometry</h3>
+        <div class="grid-form" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">
+            
+            <div class="form-group" style="grid-column: span 1;">
+                <label>Temperature</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" name="temperature" placeholder="Value" style="width: 60%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <select name="temp_unit" style="width: 40%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="°C">°C</option><option value="°F">°F</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Pulse (/min)</label><div class="input-with-icon"><i class="fa-solid fa-wave-square"></i><input type="text" name="pulse"></div></div>
+            <div class="form-group"><label>BP (mmHg)</label><div class="input-with-icon"><i class="fa-solid fa-stethoscope"></i><input type="text" name="bp" placeholder="e.g. 120/80"></div></div>
+            <div class="form-group"><label>Resp. Rate (/min)</label><div class="input-with-icon"><i class="fa-solid fa-lungs"></i><input type="text" name="respiratory_rate"></div></div>
+            
+            <div class="form-group"><label>Height (cm)</label><div class="input-with-icon"><i class="fa-solid fa-ruler-vertical"></i><input type="number" step="0.1" name="height" id="calc_height"></div></div>
+            <div class="form-group"><label>Weight (kg)</label><div class="input-with-icon"><i class="fa-solid fa-weight-scale"></i><input type="number" step="0.1" name="weight" id="calc_weight"></div></div>
+            <div class="form-group" style="grid-column: span 2;"><label>BSA (sq. meters) - Auto Calculated</label><div class="input-with-icon"><i class="fa-solid fa-calculator"></i><input type="text" name="bsa" id="calc_bsa" readonly style="background: #e8eaed; font-weight: bold;"></div></div>
+
+            <div class="form-group" style="grid-column: span 2;"><label>Serum Creatinine (mg/dL)</label><div class="input-with-icon"><i class="fa-solid fa-flask"></i><input type="number" step="0.01" name="serum_creatinine" id="calc_creat"></div></div>
+            <div class="form-group" style="grid-column: span 2;"><label>CrCl (ml/min) - Cockcroft-Gault</label><div class="input-with-icon"><i class="fa-solid fa-calculator"></i><input type="text" name="crcl" id="calc_crcl" readonly style="background: #e8eaed; font-weight: bold;"></div></div>
+        </div>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-head-side-cough"></i> Chief Complaints</h3>
+        <table class="data-table" id="complaintsTable" style="margin-bottom: 10px; background: #fff; border: 1px solid var(--border-color);">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th>Complaint</th><th>Frequency</th><th>Severity</th><th>Start Date</th><th>End Date / Status</th><th>Duration</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="c_complaint[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="c_frequency[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="c_severity[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="date" name="c_start[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="date" name="c_end[]" style="width:100%; padding:6px; border:1px solid #ccc;">
+                            <label style="margin: 0; font-size: 0.8rem; display: flex; align-items: center; gap: 2px; cursor: pointer; white-space: nowrap;">
+                                <input type="checkbox" onchange="toggleOngoing(this)"> Ongoing
+                            </label>
+                        </div>
+                    </td>
+                    <td><input type="text" name="c_duration[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addComplaintRow()"><i class="fa-solid fa-plus"></i> Add Complaint Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 40px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Physical Examination</h3>
+        <table class="data-table" id="examTable" style="margin-bottom: 10px; background: #fff; border: 1px solid var(--border-color);">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="width: 25%;">Body System</th><th style="width: 40%;">Examination Findings</th><th style="width: 30%;">Comments</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="e_system[]" placeholder="e.g. CVS, RS, CNS" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="e_finding[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="e_comment[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addRow('examTable', 'e_system[],e_finding[],e_comment[]', 'text,text,text')"><i class="fa-solid fa-plus"></i> Add Exam Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 40px;"><i class="fa-solid fa-microscope"></i> Investigations Advised</h3>
+        <div class="form-group full-width">
+            <textarea name="investigations" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px;" placeholder="List lab or radiological investigations advised..."></textarea>
+        </div>
+
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-pills"></i> Treatment Advised</h3>
+        <table class="data-table" id="treatmentTable" style="margin-bottom: 10px; background: #fff; border: 1px solid var(--border-color);">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th>Dosage Form</th><th>Drug Name</th><th>Strength</th><th>Frequency</th><th>Duration</th><th>Comment</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="t_form[]" placeholder="Tab, Syr, Inj" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="t_drug[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="t_strength[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="t_frequency[]" placeholder="OD, BD, etc." style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="t_duration[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><input type="text" name="t_comment[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addRow('treatmentTable', 't_form[],t_drug[],t_strength[],t_frequency[],t_duration[],t_comment[]', 'text,text,text,text,text,text')"><i class="fa-solid fa-plus"></i> Add Drug Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 40px;"><i class="fa-solid fa-file-signature"></i> Outcomes</h3>
+        <div class="grid-form">
+            <div class="form-group"><label>Provisional Diagnosis</label><div class="input-with-icon"><i class="fa-solid fa-tag"></i><input type="text" name="provisional_diagnosis"></div></div>
+            <div class="form-group"><label>Primary Diagnosis (Updates Master Record)</label><div class="input-with-icon"><i class="fa-solid fa-tags" style="color: var(--primary-accent);"></i><input type="text" name="primary_diagnosis" value="{{ patient.primary_diagnosis }}"></div></div>
+            <div class="form-group"><label>Next Visit Date</label><div class="input-with-icon"><i class="fa-solid fa-calendar-check"></i><input type="date" name="next_visit_date" id="next_visit_date"></div></div>
+        </div>
+
+        <div class="form-group full-width" style="margin-top: 40px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button type="submit" class="btn-primary" style="width: 100%; max-width: 400px; font-size: 1.1rem; padding: 12px;"><i class="fa-solid fa-cloud-arrow-up"></i> Save Consultation Record</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // --- DATE VALIDATIONS & DEFAULTS ---
+    document.addEventListener('DOMContentLoaded', function() {
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+        let tomorrowLocal = (new Date(Date.now() - tzOffset + 86400000)).toISOString().split('T')[0];
+        
+        // 1. Visit Date: Default is today, max is today
+        let visitDate = document.getElementById('visit_date');
+        visitDate.value = todayLocal;
+        visitDate.setAttribute('max', todayLocal);
+
+        // 2. Next Visit Date: Min is tomorrow
+        let nextVisit = document.getElementById('next_visit_date');
+        if (nextVisit) nextVisit.setAttribute('min', tomorrowLocal);
+    });
+
+    // Event Delegation to handle dynamic Chief Complaint dates
+    document.getElementById('complaintsTable').addEventListener('focusin', function(e) {
+        let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+        let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+
+        // Max limit for both Start and End dates
+        if (e.target.name === 'c_start[]' || e.target.name === 'c_end[]') {
+            e.target.setAttribute('max', todayLocal);
+        }
+        
+        // Enforce End Date >= Start Date
+        if (e.target.name === 'c_end[]') {
+            let row = e.target.closest('tr');
+            let startInput = row.querySelector('input[name="c_start[]"]');
+            if (startInput && startInput.value) {
+                e.target.setAttribute('min', startInput.value);
+            }
+        }
+    });
+
+    // Clear End Date if Start Date is changed to a value after the existing End Date
+    document.getElementById('complaintsTable').addEventListener('change', function(e) {
+        if (e.target.name === 'c_start[]') {
+            let row = e.target.closest('tr');
+            let endInput = row.querySelector('input[name="c_end[]"]');
+            if (endInput && endInput.value && e.target.value > endInput.value) {
+                endInput.value = ''; 
+            }
+        }
+    });
+
+    // --- "ONGOING" CHECKBOX LOGIC ---
+    function toggleOngoing(checkbox) {
+        let row = checkbox.closest('tr');
+        let endInput = row.querySelector('input[name="c_end[]"]');
+        if (checkbox.checked) {
+            endInput.value = '';
+            endInput.disabled = true;
+            endInput.style.backgroundColor = '#f1f3f4';
+        } else {
+            endInput.disabled = false;
+            endInput.style.backgroundColor = '#ffffff';
+        }
+    }
+
+    // --- CLINICAL CALCULATORS ---
+    const hInput = document.getElementById('calc_height');
+    const wInput = document.getElementById('calc_weight');
+    const bsaOut = document.getElementById('calc_bsa');
+    
+    const cInput = document.getElementById('calc_creat');
+    const crclOut = document.getElementById('calc_crcl');
+    const pAge = parseInt(document.getElementById('hidden_age').value) || 0;
+    const pGender = document.getElementById('hidden_gender').value;
+
+    function runCalculators() {
+        let h = parseFloat(hInput.value);
+        let w = parseFloat(wInput.value);
+        let cr = parseFloat(cInput.value);
+
+        // Calculate BSA (Mosteller)
+        if (h > 0 && w > 0) {
+            let bsa = Math.sqrt((h * w) / 3600);
+            bsaOut.value = bsa.toFixed(2);
+        } else {
+            bsaOut.value = "";
+        }
+
+        // Calculate CrCl (Cockcroft-Gault)
+        if (w > 0 && cr > 0 && pAge > 0) {
+            let crcl = ((140 - pAge) * w) / (72 * cr);
+            if (pGender.toLowerCase() === 'female') {
+                crcl = crcl * 0.85; // Female correction factor
+            }
+            crclOut.value = crcl.toFixed(2);
+        } else {
+            crclOut.value = "";
+        }
+    }
+    
+    hInput.addEventListener('input', runCalculators);
+    wInput.addEventListener('input', runCalculators);
+    cInput.addEventListener('input', runCalculators);
+
+    // --- DYNAMIC TABLE ROWS LOGIC ---
+    
+    // Dedicated function for Complaints to inject the complex Date + Checkbox HTML
+    function addComplaintRow() {
+        let table = document.getElementById('complaintsTable').getElementsByTagName('tbody')[0];
+        let newRow = table.insertRow();
+        newRow.innerHTML = `
+            <td><input type="text" name="c_complaint[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><input type="text" name="c_frequency[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><input type="text" name="c_severity[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><input type="date" name="c_start[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <input type="date" name="c_end[]" style="width:100%; padding:6px; border:1px solid #ccc;">
+                    <label style="margin: 0; font-size: 0.8rem; display: flex; align-items: center; gap: 2px; cursor: pointer; white-space: nowrap;">
+                        <input type="checkbox" onchange="toggleOngoing(this)"> Ongoing
+                    </label>
+                </div>
+            </td>
+            <td><input type="text" name="c_duration[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+    }
+
+    // Generic function for Exam and Treatment tables
+    function addRow(tableId, namesCsv, typesCsv) {
+        let table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+        let newRow = table.insertRow();
+        let names = namesCsv.split(',');
+        let types = typesCsv.split(',');
+        
+        for (let i = 0; i < names.length; i++) {
+            let cell = newRow.insertCell(i);
+            let input = document.createElement('input');
+            input.type = types[i];
+            input.name = names[i];
+            input.style.cssText = 'width:100%; padding:6px; border:1px solid #ccc;';
+            cell.appendChild(input);
+        }
+        
+        // Add delete button cell
+        let actionCell = newRow.insertCell(names.length);
+        actionCell.innerHTML = '<button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button>';
+    }
+
+    function removeRow(button) {
+        let row = button.parentNode.parentNode;
+        // Don't delete if it's the very last row left
+        if (row.parentNode.rows.length > 1) {
+            row.parentNode.removeChild(row);
+        } else {
+            alert("You must keep at least one row. You can leave it blank.");
+        }
+    }
+</script>
+{% endblock %}

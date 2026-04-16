@@ -1,0 +1,46 @@
+{% extends "base_layout.html" %}
+{% block title %}Protocols Master{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 20px;">
+    <h2><i class="fa-solid fa-book-medical" style="color: #0f9d58; margin-right: 10px;"></i>Chemotherapy Protocols Library</h2>
+    <a href="{{ url_for('protocols_new') }}" class="btn-primary" style="background-color: #0f9d58;"><i class="fa-solid fa-plus"></i> Create New Protocol</a>
+</div>
+
+<div class="panel-card">
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead style="background: #f8f9fa;">
+                <tr>
+                    <th>Protocol Name</th><th>Intent</th><th>Cycles</th><th>Cycle Length</th><th>Days of Administration</th><th>Author</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in protocols %}
+                <tr>
+                    <td style="font-weight: 600; color: #0f9d58;">{{ p.name }}</td>
+                    <td><span class="badge badge-grey">{{ p.intent }}</span></td>
+                    <td>{{ p.num_cycles }}</td>
+                    <td>{{ p.days_between_cycles }} Days</td>
+                    <td>Day(s): <span style="font-weight: 600;">{{ p.assign_days | replace('["', '') | replace('"]', '') | replace('"', '') }}</span></td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">{{ p.created_by }}</td>
+                    <td>
+                        <a href="{{ url_for('protocols_edit', proto_id=p.id) }}" class="btn-secondary" style="color: #1a73e8; padding: 4px 8px; margin-right: 5px;"><i class="fa-solid fa-pen-to-square"></i></a>
+                        {% if user.role == 'Admin' %}
+                        <a href="{{ url_for('protocols_delete', proto_id=p.id) }}" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="return confirm('Are you sure you want to delete this protocol?');"><i class="fa-solid fa-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fa-solid fa-folder-plus fa-2x" style="margin-bottom: 10px; opacity: 0.5; display: block;"></i>
+                        No protocols found. Create a master protocol to begin.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
