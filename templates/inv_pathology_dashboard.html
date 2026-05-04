@@ -35,62 +35,58 @@
             <a href="{{ url_for('inv_pathology_new', patient_id=patient.id) }}" class="btn-primary"><i class="fa-solid fa-plus"></i> Log New Report</a>
         </div>
     </div>
-    <div style="margin-top: 15px;">
-        {% for rec in records %}
-        <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
-            <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
-                <strong>Logged on: {{ rec.date.strftime('%d-%b-%Y') }}</strong>
-            </div>
-            <div style="padding: 20px;">
-                {% if rec.cytology %}
-                <h4>Cytology</h4>
-                <table class="data-table" style="margin-bottom: 20px;">
-                    <thead><tr><th>Date</th><th>Specimen</th><th>Interpretation</th><th class="no-print">Attachment</th></tr></thead>
-                    <tbody>
-                        {% for c in rec.cytology %}
-                        <tr>
-                            <td>{{ c.date }}</td><td>{{ c.specimen }}</td><td>{{ c.interpretation }}</td>
-                            <td class="no-print">
-                                {% if c.file %}<a href="{{ url_for('static', filename='uploads/' + c.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ c.file }}</a>{% else %}-{% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-                
-                {% if rec.histopathology %}
-                <h4>Histopathology</h4>
-                <table class="data-table" style="margin-bottom: 20px;">
-                    <thead><tr><th>Date</th><th>Type</th><th>Staging / Grading</th><th class="no-print">Attachment</th></tr></thead>
-                    <tbody>
-                        {% for h in rec.histopathology %}
-                        <tr>
-                            <td>{{ h.date }}</td><td>{{ h.type }} ({{ h.site }})</td><td>{{ h.staging }} / {{ h.grading }}</td>
-                            <td class="no-print">{% if h.file %}<a href="{{ url_for('static', filename='uploads/' + h.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ h.file }}</a>{% else %}-{% endif %}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
+    
+    <div style="margin-top: 30px;">
+        <h3 style="color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; margin-bottom: 15px;"><i class="fa-solid fa-vial"></i> Cytology History</h3>
+        <table class="data-table" style="width: 100%; margin-bottom: 40px;">
+            <thead><tr><th>Date</th><th>Specimen</th><th>Interpretation</th><th class="no-print">Attachment</th><th class="no-print">Action</th></tr></thead>
+            <tbody>
+                {% set has_cyto = false %}
+                {% for rec in records %}{% for c in rec.cytology %}
+                    {% set has_cyto = true %}
+                    <tr>
+                        <td>{{ c.date }}</td><td>{{ c.specimen }}</td><td>{{ c.interpretation }}</td>
+                        <td class="no-print">{% if c.file %}<a href="{{ url_for('static', filename='uploads/' + c.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> View File</a>{% else %}-{% endif %}</td>
+                        <td class="no-print"><a href="{{ url_for('inv_pathology_edit', record_id=rec.id, patient_id=patient.id) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.85rem;"><i class="fa-solid fa-pen"></i> Edit</a></td>
+                    </tr>
+                {% endfor %}{% endfor %}
+                {% if not has_cyto %}<tr><td colspan="5" style="text-align: center; color: #999;">No cytology records found.</td></tr>{% endif %}
+            </tbody>
+        </table>
 
-                {% if rec.biomarker %}
-                <h4>Biomarkers</h4>
-                <table class="data-table">
-                    <thead><tr><th>Date</th><th>Biomarker</th><th>Status</th><th class="no-print">Attachment</th></tr></thead>
-                    <tbody>
-                        {% for b in rec.biomarker %}
-                        <tr>
-                            <td>{{ b.date }}</td><td>{{ b.biomarker }}</td><td>{{ b.status }}</td>
-                            <td class="no-print">{% if b.file %}<a href="{{ url_for('static', filename='uploads/' + b.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> {{ b.file }}</a>{% else %}-{% endif %}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
+        <h3 style="color: #0f9d58; border-bottom: 2px solid #e6f4ea; padding-bottom: 5px; margin-bottom: 15px;"><i class="fa-solid fa-dna"></i> Histopathology History</h3>
+        <table class="data-table" style="width: 100%; margin-bottom: 40px;">
+            <thead><tr><th>Date</th><th>Type</th><th>Staging / Grading</th><th class="no-print">Attachment</th><th class="no-print">Action</th></tr></thead>
+            <tbody>
+                {% set has_histo = false %}
+                {% for rec in records %}{% for h in rec.histopathology %}
+                    {% set has_histo = true %}
+                    <tr>
+                        <td>{{ h.date }}</td><td>{{ h.type }} ({{ h.site }})</td><td>{{ h.staging }} / {{ h.grading }}</td>
+                        <td class="no-print">{% if h.file %}<a href="{{ url_for('static', filename='uploads/' + h.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> View File</a>{% else %}-{% endif %}</td>
+                        <td class="no-print"><a href="{{ url_for('inv_pathology_edit', record_id=rec.id, patient_id=patient.id) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.85rem;"><i class="fa-solid fa-pen"></i> Edit</a></td>
+                    </tr>
+                {% endfor %}{% endfor %}
+                {% if not has_histo %}<tr><td colspan="5" style="text-align: center; color: #999;">No histopathology records found.</td></tr>{% endif %}
+            </tbody>
+        </table>
+
+        <h3 style="color: #d93025; border-bottom: 2px solid #fce8e6; padding-bottom: 5px; margin-bottom: 15px;"><i class="fa-solid fa-virus"></i> Biomarkers History</h3>
+        <table class="data-table" style="width: 100%;">
+            <thead><tr><th>Date</th><th>Biomarker</th><th>Status</th><th class="no-print">Attachment</th><th class="no-print">Action</th></tr></thead>
+            <tbody>
+                {% set has_bio = false %}
+                {% for rec in records %}{% for b in rec.biomarker %}
+                    {% set has_bio = true %}
+                    <tr>
+                        <td>{{ b.date }}</td><td>{{ b.biomarker }}</td><td>{{ b.status }}</td>
+                        <td class="no-print">{% if b.file %}<a href="{{ url_for('static', filename='uploads/' + b.file) }}" target="_blank" style="color: #1a73e8;"><i class="fa-solid fa-paperclip"></i> View File</a>{% else %}-{% endif %}</td>
+                        <td class="no-print"><a href="{{ url_for('inv_pathology_edit', record_id=rec.id, patient_id=patient.id) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.85rem;"><i class="fa-solid fa-pen"></i> Edit</a></td>
+                    </tr>
+                {% endfor %}{% endfor %}
+                {% if not has_bio %}<tr><td colspan="5" style="text-align: center; color: #999;">No biomarker records found.</td></tr>{% endif %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

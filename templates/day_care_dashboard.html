@@ -26,31 +26,58 @@
 <div class="panel-card" style="border-left: 4px solid #0f9d58;">
     <div class="panel-header" style="margin-bottom: 10px;">
         <h2>Active Regimen: <span style="color: #0f9d58;">{{ active_protocol.protocol.name }}</span></h2>
-        {% if next_cycle %}
-            <a href="{{ url_for('day_care_session', patient_id=patient.id, proto_id=active_protocol.id, cycle=next_cycle, day=next_day) }}" class="btn-primary" style="background: #0f9d58;">
-                <i class="fa-solid fa-play"></i> Start Cycle {{ next_cycle }}, Day {{ next_day }}
-            </a>
-        {% else %}
-            <span class="badge" style="background: #e6f4ea; color: #137333; font-size: 1rem; padding: 8px 15px;"><i class="fa-solid fa-check-double"></i> Protocol Complete</span>
-        {% endif %}
+        <div style="display: flex; gap: 10px; align-items: center;">
+            {% if next_cycle and active_protocol.status != 'Terminated' %}
+                <a href="{{ url_for('day_care_session', patient_id=patient.id, proto_id=active_protocol.id, cycle=next_cycle, day=next_day) }}" class="btn-primary" style="background: #0f9d58;">
+                    <i class="fa-solid fa-play"></i> Start Cycle {{ next_cycle }}, Day {{ next_day }}
+                </a>
+                <button type="button" class="btn-secondary" style="color: #d93025; border-color: #d93025;" onclick="document.getElementById('termination_box').style.display='block';">
+                    <i class="fa-solid fa-ban"></i> Terminate Protocol
+                </button>
+            {% elif active_protocol.status == 'Terminated' %}
+                <span class="badge" style="background: #fce8e6; color: #d93025; font-size: 1rem; padding: 8px 15px;"><i class="fa-solid fa-ban"></i> Protocol Terminated</span>
+            {% else %}
+                <span class="badge" style="background: #e6f4ea; color: #137333; font-size: 1rem; padding: 8px 15px;"><i class="fa-solid fa-check-double"></i> Protocol Complete</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="termination_box" style="display: none; background: #fce8e6; padding: 15px; border: 1px solid #fad2cf; border-radius: 8px; margin-bottom: 20px;">
+        <form action="{{ url_for('terminate_protocol', patient_id=patient.id, assignment_id=active_protocol.id) }}" method="POST" style="display: flex; gap: 10px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label style="font-weight: 600; color: #d93025; display: block; margin-bottom: 5px;">Reason for Termination *</label>
+                <select name="termination_reason" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>Select Reason</option>
+                    <option value="Toxicity">Toxicity</option>
+                    <option value="Non-response">Non-response</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary" style="background: #d93025; border-color: #d93025;">Confirm Termination</button>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('termination_box').style.display='none';">Cancel</button>
+        </form>
     </div>
     <p style="color: var(--text-muted); margin-bottom: 20px;">
         <strong>Intent:</strong> {{ active_protocol.protocol.intent }} | <strong>Cycles:</strong> {{ active_protocol.protocol.num_cycles }} | <strong>Assigned Days:</strong> {{ active_protocol.protocol.assign_days | replace('["', '') | replace('"]', '') | replace('"', '') }}
     </p>
 
-    <h4 style="margin-bottom: 10px;">Administration History</h4>
+    <<h4 style="margin-bottom: 10px;">Administration History</h4>
     <div style="overflow-x: auto;">
         <table class="data-table">
-            <thead style="background: #f8f9fa;"><tr><th>Cycle / Day</th><th>Actual Date</th><th>Delayed?</th><th>Administered By</th><th>Discharge Summary</th></tr></thead>
+            <thead style="background: #f8f9fa;"><tr><th>Cycle / Day</th><th>Actual Date</th><th>Delayed?</th><th>Administered At</th><th>Discharge Summary</th></tr></thead>
             <tbody>
                 {% for rec in active_protocol.records %}
                 <tr>
                     <td style="font-weight: 600;">Cycle {{ rec.cycle_number }}, Day {{ rec.day_number }}</td>
-                    <td>{{ rec.actual_date.strftime('%d-%b-%Y') }}</td>
+                    <td>{{ rec.actual_date.strftime('%d-%b-%Y') if rec.actual_date else 'N/A' }}</td>
                     <td>{% if rec.is_delayed == 'Yes' %}<span style="color: #d93025; font-weight: 500;">Yes ({{ rec.delay_reason }})</span>{% else %}No{% endif %}</td>
-                    <td>{{ rec.created_by }}</td>
+                    <td>{{ rec.administered_at if rec.administered_at else 'BB Precision Oncocare Centre' }}</td>
                     <td>
+                        {% if rec.administered_at == 'At other centre' %}
+                        <span style="color: #999; font-size: 0.85rem;">No summary (Outside Admin)</span>
+                        {% else %}
                         <a href="{{ url_for('day_care_summary', patient_id=patient.id, record_id=rec.id) }}" target="_blank" class="btn-secondary" style="padding: 4px 10px;"><i class="fa-solid fa-file-pdf" style="color: #d93025;"></i> View Summary</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}
@@ -59,6 +86,71 @@
             </tbody>
         </table>
     </div>
+
+    {% if not next_cycle or active_protocol.status == 'Terminated' %}
+    <div style="margin-top: 30px; padding: 20px; border-top: 2px dashed #ccc; background: #fdfdfd; border-radius: 0 0 8px 8px;">
+        <h4 style="color: var(--primary-accent); margin-bottom: 10px;"><i class="fa-solid fa-link"></i> Assign New Protocol</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Since the previous protocol has concluded, you may assign a new master protocol below.</p>
+        <form action="{{ url_for('day_care', patient_id=patient.id) }}" method="POST" style="display: flex; gap: 10px;">
+            <select name="protocol_id" class="input-with-icon" style="width: 300px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" required>
+                <option value="" disabled selected>Select Master Protocol...</option>
+                {% for p in all_protocols %}<option value="{{ p.id }}">{{ p.name }} ({{ p.intent }})</option>{% endfor %}
+            </select>
+            <button type="submit" name="assign_protocol" class="btn-primary">Assign New Protocol</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% if historical_protocols %}
+<div class="panel-card" style="margin-top: 30px; border-left: 4px solid #9aa0a6;">
+    <div class="panel-header" style="margin-bottom: 15px;">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color: #666; margin-right: 10px;"></i>Protocol History</h2>
+    </div>
+    
+    {% for hp in historical_protocols %}
+    <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+        <div style="background: #f1f3f4; padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; color: #3c4043;">{{ hp.protocol.name }}</h4>
+            {% if hp.status == 'Terminated' %}
+                <span class="badge" style="background: #fce8e6; color: #d93025; font-size: 0.85rem;"><i class="fa-solid fa-ban"></i> Terminated: {{ hp.termination_reason }}</span>
+            {% else %}
+                <span class="badge" style="background: #e6f4ea; color: #137333; font-size: 0.85rem;"><i class="fa-solid fa-check-double"></i> Completed</span>
+            {% endif %}
+        </div>
+        
+        <div style="padding: 20px;">
+            {% if hp.status == 'Terminated' and hp.termination_comments %}
+                <p style="font-size: 0.85rem; color: #d93025; margin-bottom: 15px; padding: 10px; background: #fdfdfd; border-left: 3px solid #d93025;"><strong>Comments:</strong> {{ hp.termination_comments }}</p>
+            {% endif %}
+            
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead style="background: #f8f9fa;"><tr><th>Cycle / Day</th><th>Actual Date</th><th>Delayed?</th><th>Administered At</th><th>Discharge Summary</th></tr></thead>
+                    <tbody>
+                        {% for rec in hp.records %}
+                        <tr>
+                            <td style="font-weight: 600;">Cycle {{ rec.cycle_number }}, Day {{ rec.day_number }}</td>
+                            <td>{{ rec.actual_date.strftime('%d-%b-%Y') if rec.actual_date else 'N/A' }}</td>
+                            <td>{% if rec.is_delayed == 'Yes' %}<span style="color: #d93025; font-weight: 500;">Yes ({{ rec.delay_reason }})</span>{% else %}No{% endif %}</td>
+                            <td>{{ rec.administered_at if rec.administered_at else 'BB Precision Oncocare Centre' }}</td>
+                            <td>
+                                {% if rec.administered_at == 'At other centre' %}
+                                <span style="color: #999; font-size: 0.85rem;">No summary (Outside Admin)</span>
+                                {% else %}
+                                <a href="{{ url_for('day_care_summary', patient_id=patient.id, record_id=rec.id) }}" target="_blank" class="btn-secondary" style="padding: 4px 10px;"><i class="fa-solid fa-file-pdf" style="color: #d93025;"></i> View Summary</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align: center; color: #999; padding: 15px;">No sessions administered.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

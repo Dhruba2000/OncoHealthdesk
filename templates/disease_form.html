@@ -3,70 +3,73 @@
 
 {% block content %}
 <div class="panel-header" style="margin-bottom: 20px;">
-    <h2><i class="fa-solid fa-virus" style="color: var(--primary-accent); margin-right: 10px;"></i>Log Disease & Diagnosis</h2>
+    <h2><i class="fa-solid fa-virus" style="color: var(--primary-accent); margin-right: 10px;"></i>Log / Edit Disease Records</h2>
     <a href="{{ url_for('disease_diagnosis', patient_id=patient.id) }}" class="btn-secondary">Cancel</a>
 </div>
 
-<div class="panel-card" style="background: #fdfdfd; border-left: 4px solid #fbbc04; margin-bottom: 25px; padding: 20px;">
-    <h3 style="font-size: 1.1rem; color: #b06000; margin-bottom: 15px;"><i class="fa-solid fa-circle-info"></i> Clinical Reference (Recent Investigations)</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        
-        <div style="background: #fff; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; height: 250px; overflow-y: auto;">
-            <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-muted);">Pathology Data</h4>
-            {% for pr in path_records %}
-                {% for c in pr.cyto %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Cytology ({{ c.date }}):</strong> {{ c.specimen }} - {{ c.interpretation }}</div>{% endfor %}
-                {% for h in pr.histo %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Histopathology ({{ h.date }}):</strong> {{ h.type }} - Grade: {{ h.grading }} - {{ h.interpretation }}</div>{% endfor %}
-                {% for b in pr.bio %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>Biomarker ({{ b.date }}):</strong> {{ b.biomarker }} - <strong>Status: {{ b.status }}</strong></div>{% endfor %}
-            {% else %} <div style="font-size: 0.85rem; color: #999;">No pathology records available.</div> {% endfor %}
-        </div>
-
-        <div style="background: #fff; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; height: 250px; overflow-y: auto;">
-            <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-muted);">Radiology Data</h4>
-            {% for rr in rad_records %}
-                {% for r in rr.data %}<div style="font-size: 0.85rem; padding: 5px 0; border-bottom: 1px dashed #eee;"><strong>{{ r.test }} ({{ r.date }}):</strong> {{ r.result }}</div>{% endfor %}
-            {% else %} <div style="font-size: 0.85rem; color: #999;">No radiology records available.</div> {% endfor %}
-        </div>
-    </div>
-</div>
-
-<div class="panel-card" style="max-width: 1200px; margin: 0 auto;">
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
     <form action="{{ url_for('disease_diagnosis_new', patient_id=patient.id) }}" method="POST">
         
-        <h3 class="form-section-title"><i class="fa-solid fa-clipboard-user"></i> Core Diagnosis</h3>
-        <div class="grid-form">
-            <div class="form-group"><label>Date of Diagnosis *</label><input type="date" id="diagnosis_date_input" name="date_of_diagnosis" required></div>
-            <div class="form-group"><label>Primary Site *</label><div class="input-with-icon"><i class="fa-solid fa-location-crosshairs"></i><input type="text" name="primary_site" placeholder="e.g. Right Breast" required></div></div>
-            <div class="form-group full-width"><label>Diagnosis Description</label><div class="input-with-icon"><i class="fa-solid fa-align-left"></i><input type="text" name="diagnosis_description"></div></div>
-            <div class="form-group">
-                <label>Risk Stratification</label>
-                <div class="input-with-icon"><i class="fa-solid fa-triangle-exclamation"></i>
-                <select name="risk_stratification">
-                    <option value="" selected disabled>Select</option><option value="Low">Low</option><option value="Intermediate">Intermediate</option><option value="High">High</option><option value="NA">NA</option>
-                </select></div>
-            </div>
-        </div>
+        <h3 class="form-section-title"><i class="fa-solid fa-clipboard-user"></i> 1. Core Diagnosis</h3>
+        <table class="compact-table" id="coreTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+            <thead style="background: #f8f9fa;"><tr><th>Date of Diagnosis</th><th>Primary Site</th><th>Diagnosis Description</th><th>Risk Stratification</th><th></th></tr></thead>
+            <tbody>
+                {% if record and record.core_diagnosis %}
+                    {% for c in record.core_diagnosis %}
+                    <tr>
+                        <td><input type="date" name="c_date[]" value="{{ c.date }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><input type="text" name="c_site[]" value="{{ c.site }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><input type="text" name="c_desc[]" value="{{ c.desc }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><select name="c_risk[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="Low" {% if c.risk=='Low' %}selected{% endif %}>Low</option><option value="Intermediate" {% if c.risk=='Intermediate' %}selected{% endif %}>Intermediate</option><option value="High" {% if c.risk=='High' %}selected{% endif %}>High</option><option value="NA" {% if c.risk=='NA' %}selected{% endif %}>NA</option></select></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="date" name="c_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><input type="text" name="c_site[]" style="width:100%; padding:6px; border:1px solid #ccc;" required></td>
+                        <td><input type="text" name="c_desc[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><select name="c_risk[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" selected disabled>Select</option><option value="Low">Low</option><option value="Intermediate">Intermediate</option><option value="High">High</option><option value="NA">NA</option></select></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <button type="button" class="btn-secondary" onclick="addCoreRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
 
-        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-network-wired"></i> Metastasis</h3>
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-network-wired"></i> 2. Metastasis</h3>
         <div class="form-group" style="max-width: 300px;">
-            <label>Metastasis Status</label>
-            <div class="input-with-icon"><i class="fa-solid fa-code-branch"></i>
-            <select name="metastasis" id="meta_status" onchange="toggleMeta()">
-                <option value="Absent" selected>Absent</option><option value="Present">Present</option>
-            </select></div>
+            <select name="metastasis" id="meta_status" onchange="toggleMeta()" style="padding: 8px; border: 1px solid #ccc; width: 100%; border-radius: 4px;">
+                <option value="Absent" {% if record and record.metastasis == 'Absent' %}selected{% endif %}>Absent</option>
+                <option value="Present" {% if record and record.metastasis == 'Present' %}selected{% endif %}>Present</option>
+            </select>
         </div>
-        <div id="meta_section" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group" style="max-width: 300px;"><label>Number of Organs</label><input type="number" id="meta_count" min="1" max="10" oninput="generateOrgans()" style="padding: 6px; width: 100%; border: 1px solid #ccc;"></div>
-            <div id="organs_container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+        <div id="meta_section" style="display: {% if record and record.metastasis == 'Present' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div class="form-group" style="max-width: 300px;"><label>Number of Organs</label><input type="number" id="meta_count" value="{{ record.organs|length if record and record.organs else '' }}" min="1" max="10" oninput="generateOrgans()" style="padding: 6px; width: 100%; border: 1px solid #ccc;"></div>
+            <div id="organs_container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                {% if record and record.organs %}
+                    {% for o in record.organs %}<input type="text" name="meta_organs[]" value="{{ o }}" style="width:100%; padding:6px; border:1px solid #ccc;">{% endfor %}
+                {% endif %}
+            </div>
         </div>
 
         <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-circle-dot"></i> Primary Tumour Size</h3>
         <table class="compact-table" id="tumourTable" style="background: #fff; border: 1px solid var(--border-color);">
             <thead><tr style="background: #f8f9fa;"><th>Length (cm)</th><th>Width (cm)</th><th>Depth (cm)</th><th>T Stage</th><th>Description</th><th></th></tr></thead>
             <tbody>
-                <tr>
-                    <td><input type="text" name="ts_len[]"></td><td><input type="text" name="ts_wid[]"></td><td><input type="text" name="ts_dep[]"></td><td><input type="text" name="ts_t[]"></td><td><input type="text" name="ts_desc[]"></td>
-                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
-                </tr>
+                {% if record and record.tumour %}
+                    {% for t in record.tumour %}
+                    <tr>
+                        <td><input type="text" name="ts_len[]" value="{{ t.length }}"></td><td><input type="text" name="ts_wid[]" value="{{ t.width }}"></td><td><input type="text" name="ts_dep[]" value="{{ t.depth }}"></td><td><input type="text" name="ts_t[]" value="{{ t.t_stage }}"></td><td><input type="text" name="ts_desc[]" value="{{ t.desc }}"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="text" name="ts_len[]"></td><td><input type="text" name="ts_wid[]"></td><td><input type="text" name="ts_dep[]"></td><td><input type="text" name="ts_t[]"></td><td><input type="text" name="ts_desc[]"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
         <button type="button" class="btn-secondary" onclick="addTumourRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
@@ -75,64 +78,260 @@
         <table class="compact-table" id="lymphTable" style="background: #fff; border: 1px solid var(--border-color);">
             <thead><tr style="background: #f8f9fa;"><th>LN Group</th><th>Length (cm)</th><th>Width (cm)</th><th>Depth (cm)</th><th>N Stage</th><th>Description</th><th></th></tr></thead>
             <tbody>
-                <tr>
-                    <td><input type="text" name="ln_grp[]"></td><td><input type="text" name="ln_len[]"></td><td><input type="text" name="ln_wid[]"></td><td><input type="text" name="ln_dep[]"></td><td><input type="text" name="ln_n[]"></td><td><input type="text" name="ln_desc[]"></td>
-                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
-                </tr>
+                {% if record and record.lymph %}
+                    {% for l in record.lymph %}
+                    <tr>
+                        <td><input type="text" name="ln_grp[]" value="{{ l.group }}"></td><td><input type="text" name="ln_len[]" value="{{ l.length }}"></td><td><input type="text" name="ln_wid[]" value="{{ l.width }}"></td><td><input type="text" name="ln_dep[]" value="{{ l.depth }}"></td><td><input type="text" name="ln_n[]" value="{{ l.n_stage }}"></td><td><input type="text" name="ln_desc[]" value="{{ l.desc }}"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="text" name="ln_grp[]"></td><td><input type="text" name="ln_len[]"></td><td><input type="text" name="ln_wid[]"></td><td><input type="text" name="ln_dep[]"></td><td><input type="text" name="ln_n[]"></td><td><input type="text" name="ln_desc[]"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
         <button type="button" class="btn-secondary" onclick="addLymphRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
 
-        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-layer-group"></i> Staging Details</h3>
+        <h3 class="form-section-title" style="margin-top: 30px;"><i class="fa-solid fa-layer-group"></i> 3. Staging Details</h3>
         <table class="compact-table" id="stageTable" style="background: #fff; border: 1px solid var(--border-color);">
-            <thead><tr style="background: #f8f9fa;"><th>Date</th><th>Type</th><th>T</th><th>N</th><th>M</th><th>Stage</th><th>Comment</th><th></th></tr></thead>
+            <thead style="background: #f8f9fa;"><tr><th>Date</th><th>Type</th><th>T</th><th>N</th><th>M</th><th>D</th><th>Stage</th><th>Comment</th><th></th></tr></thead>
             <tbody>
-                <tr>
-                    <td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]" placeholder="Clinical, Pathological"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td>
-                    <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
-                </tr>
+                {% if record and record.staging %}
+                    {% for st in record.staging %}
+                    <tr>
+                        <td><input type="date" name="st_date[]" value="{{ st.date }}"></td><td><input type="text" name="st_type[]" value="{{ st.type }}"></td><td><input type="text" name="st_t[]" value="{{ st.t }}"></td><td><input type="text" name="st_n[]" value="{{ st.n }}"></td><td><input type="text" name="st_m[]" value="{{ st.m }}"></td><td><input type="text" name="st_d[]" value="{{ st.d }}"></td><td><input type="text" name="st_stage[]" value="{{ st.stage }}"></td><td><input type="text" name="st_comm[]" value="{{ st.comment }}"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]" placeholder="Clinical, Path"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_d[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
         <button type="button" class="btn-secondary" onclick="addStageRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
 
-        <div style="margin-top: 40px; text-align: center;"><button type="submit" class="btn-primary" style="width: 100%; max-width: 350px;"><i class="fa-solid fa-cloud-arrow-up"></i> Save Diagnosis Record</button></div>
+        <h3 class="form-section-title" style="margin-top: 40px;"><i class="fa-solid fa-chart-line"></i> 4. Disease Progression</h3>
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="progressionTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%; min-width: 1000px;">
+                <thead style="background: #f8f9fa;"><tr><th>Date</th><th>Line of Therapy</th><th>Protocol</th><th>Progression Type</th><th>Diagnosed By</th><th>Radiological Scan</th><th>Comment</th><th></th></tr></thead>
+                <tbody>
+                    {% if record and record.progression %}
+                        {% for dp in record.progression %}
+                        <tr>
+                            <td><input type="date" name="dp_date[]" value="{{ dp.date }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                            <td><select name="dp_line[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="First" {% if dp.line=='First' %}selected{% endif %}>First</option><option value="Second" {% if dp.line=='Second' %}selected{% endif %}>Second</option><option value="Third" {% if dp.line=='Third' %}selected{% endif %}>Third</option></select></td>
+                            <td>
+                                <select name="dp_protocol[]" style="width:100%; padding:6px; border:1px solid #ccc;">
+                                    {% if dp.protocol %}<option value="{{ dp.protocol }}">{{ dp.protocol }}</option>{% else %}<option value="">Select</option>{% endif %}
+                                    {% for pt in patient_protocols %}<option value="{{ pt }}">{{ pt }}</option>{% endfor %}
+                                </select>
+                            </td>
+                            <td><select name="dp_type[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="Local recurrence" {% if dp.type=='Local recurrence' %}selected{% endif %}>Local recurrence</option><option value="Regional recurrence" {% if dp.type=='Regional recurrence' %}selected{% endif %}>Regional recurrence</option><option value="Distant metastasis" {% if dp.type=='Distant metastasis' %}selected{% endif %}>Distant metastasis</option><option value="Mets Progression" {% if dp.type=='Mets Progression' %}selected{% endif %}>Mets Progression</option></select></td>
+                            <td>
+                                <select name="dp_diagnosed_by[]" onchange="toggleRadScan(this)" style="width:100%; padding:6px; border:1px solid #ccc;">
+                                    <option value="" disabled {% if not dp.diagnosed_by %}selected{% endif %}>Select</option>
+                                    <option value="Clinical exam" {% if dp.diagnosed_by=='Clinical exam' %}selected{% endif %}>Clinical exam</option>
+                                    <option value="Radiological scan" {% if dp.diagnosed_by=='Radiological scan' %}selected{% endif %}>Radiological scan</option>
+                                    <option value="Other" {% if dp.diagnosed_by=='Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="dp_rad_scan[]" class="dp_rad_scan" style="width:100%; padding:6px; border:1px solid #ccc; display: {% if dp.diagnosed_by == 'Radiological scan' %}block{% else %}none{% endif %};">
+                                    <option value="">Select Performed Scan</option>
+                                    {% if dp.radiological_scan %}<option value="{{ dp.radiological_scan }}" selected>{{ dp.radiological_scan }}</option>{% endif %}
+                                    {% for rr in rad_records %}{% for r in rr.data %}<option value="{{ r.test }} ({{ r.date }})">{{ r.test }} ({{ r.date }})</option>{% endfor %}{% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="text" name="dp_comm[]" value="{{ dp.comment }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="date" name="dp_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                            <td><select name="dp_line[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select Line</option><option value="First">First</option><option value="Second">Second</option><option value="Third">Third</option></select></td>
+                            <td>
+                                <select name="dp_protocol[]" style="width:100%; padding:6px; border:1px solid #ccc;">
+                                    <option value="" disabled selected>Select Protocol</option>
+                                    {% for pt in patient_protocols %}<option value="{{ pt }}">{{ pt }}</option>{% endfor %}
+                                </select>
+                            </td>
+                            <td><select name="dp_type[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select Type</option><option value="Local recurrence">Local recurrence</option><option value="Regional recurrence">Regional recurrence</option><option value="Distant metastasis">Distant metastasis</option><option value="Mets Progression">Mets Progression</option></select></td>
+                            <td>
+                                <select name="dp_diagnosed_by[]" onchange="toggleRadScan(this)" style="width:100%; padding:6px; border:1px solid #ccc;">
+                                    <option value="" disabled selected>Diagnosed By</option>
+                                    <option value="Clinical exam">Clinical exam</option>
+                                    <option value="Radiological scan">Radiological scan</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="dp_rad_scan[]" class="dp_rad_scan" style="width:100%; padding:6px; border:1px solid #ccc; display:none;">
+                                    <option value="">Select Performed Scan</option>
+                                    {% for rr in rad_records %}{% for r in rr.data %}<option value="{{ r.test }} ({{ r.date }})">{{ r.test }} ({{ r.date }})</option>{% endfor %}{% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="text" name="dp_comm[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <button type="button" class="btn-secondary" onclick="addProgressionRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
+
+        <h3 class="form-section-title" style="margin-top: 40px;"><i class="fa-solid fa-heart-pulse"></i> 5. Survival Status</h3>
+        <table class="data-table" id="survivalTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%; min-width: 800px;">
+            <thead style="background: #f8f9fa;"><tr><th>Follow-up Date</th><th>Survival Status</th><th>Death Date</th><th>Death Reason</th><th></th></tr></thead>
+            <tbody>
+                {% if record and record.survival %}
+                    {% for sf in record.survival %}
+                    <tr>
+                        <td><input type="date" name="sf_date[]" value="{{ sf.date }}" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td>
+                            <select name="sf_status[]" onchange="toggleDeathFields(this)" class="sf-status-dropdown" style="width:100%; padding:6px; border:1px solid #ccc;">
+                                <option value="Alive" {% if sf.status=='Alive' %}selected{% endif %}>Alive</option>
+                                <option value="Died" {% if sf.status=='Died' %}selected{% endif %}>Died</option>
+                                <option value="Lost to follow up" {% if sf.status=='Lost to follow up' %}selected{% endif %}>Lost to follow up</option>
+                            </select>
+                        </td>
+                        <td><input type="date" name="sf_death_date[]" value="{{ sf.death_date }}" style="width:100%; padding:6px; border:1px solid #ccc; display: {% if sf.status == 'Died' %}block{% else %}none{% endif %};"></td>
+                        <td>
+                            <select name="sf_death_reason[]" style="width:100%; padding:6px; border:1px solid #ccc; display: {% if sf.status == 'Died' %}block{% else %}none{% endif %};">
+                                <option value="" disabled {% if not sf.death_reason %}selected{% endif %}>Select Reason</option>
+                                <option value="Related to cancer" {% if sf.death_reason=='Related to cancer' %}selected{% endif %}>Related to cancer</option>
+                                <option value="Not related to cancer" {% if sf.death_reason=='Not related to cancer' %}selected{% endif %}>Not related to cancer</option>
+                            </select>
+                        </td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="date" name="sf_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+                        <td><select name="sf_status[]" onchange="toggleDeathFields(this)" class="sf-status-dropdown" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select Status</option><option value="Alive">Alive</option><option value="Died">Died</option><option value="Lost to follow up">Lost to follow up</option></select></td>
+                        <td><input type="date" name="sf_death_date[]" style="width:100%; padding:6px; border:1px solid #ccc; display:none;"></td>
+                        <td><select name="sf_death_reason[]" style="width:100%; padding:6px; border:1px solid #ccc; display:none;"><option value="" disabled selected>Select Reason</option><option value="Related to cancer">Related to cancer</option><option value="Not related to cancer">Not related to cancer</option></select></td>
+                        <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <button type="button" id="addSurvivalBtn" class="btn-secondary" onclick="addSurvivalRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Follow-up</button>
+
+        <div style="margin-top: 50px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button type="submit" class="btn-primary" style="width: 100%; max-width: 350px; font-size: 1.1rem; padding: 12px;"><i class="fa-solid fa-cloud-arrow-up"></i> Save Diagnosis Record</button>
+        </div>
     </form>
 </div>
 
+<select id="protocols_template" style="display:none;">
+    <option value="" disabled selected>Select Protocol</option>
+    {% for pt in patient_protocols %}<option value="{{ pt }}">{{ pt }}</option>{% endfor %}
+</select>
+<select id="rad_scans_template" style="display:none;">
+    <option value="">Select Performed Scan</option>
+    {% for rr in rad_records %}{% for r in rr.data %}<option value="{{ r.test }} ({{ r.date }})">{{ r.test }} ({{ r.date }})</option>{% endfor %}{% endfor %}
+</select>
+
 <script>
-    // Metastasis Logic
+    // Global Date Restrictor
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.type === 'date') {
+            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            e.target.setAttribute('max', todayLocal);
+        }
+    });
+
+    // Metastasis triggers
     function toggleMeta() {
         let status = document.getElementById('meta_status').value;
         let sec = document.getElementById('meta_section');
-        if (status === 'Present') { sec.style.display = 'block'; } 
-        else { sec.style.display = 'none'; document.getElementById('meta_count').value = ''; document.getElementById('organs_container').innerHTML = ''; }
+        if (status === 'Present') { sec.style.display = 'block'; } else { sec.style.display = 'none'; document.getElementById('organs_container').innerHTML = ''; document.getElementById('meta_count').value = ''; }
     }
     function generateOrgans() {
         let count = parseInt(document.getElementById('meta_count').value) || 0;
         let container = document.getElementById('organs_container');
         container.innerHTML = '';
-        for(let i=0; i<count; i++) {
-            container.innerHTML += `<input type="text" name="meta_organs[]" placeholder="Name of Organ ${i+1}" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:3px;">`;
-        }
+        for(let i=0; i<count; i++) { container.innerHTML += `<input type="text" name="meta_organs[]" placeholder="Organ ${i+1}" style="width:100%; padding:6px; border:1px solid #ccc;">`; }
     }
 
-    // Dynamic Tables
+    // Progression triggers
+    function toggleRadScan(selectElement) {
+        let row = selectElement.closest('tr');
+        let radSelect = row.querySelector('.dp_rad_scan');
+        if (selectElement.value === 'Radiological scan') { radSelect.style.display = 'block'; } 
+        else { radSelect.style.display = 'none'; radSelect.value = ''; }
+    }
+
+    // Survival triggers
+    function toggleDeathFields(selectElement) {
+        let row = selectElement.closest('tr');
+        let deathDate = row.querySelector('input[name="sf_death_date[]"]');
+        let deathReason = row.querySelector('select[name="sf_death_reason[]"]');
+        
+        if (selectElement.value === 'Died') {
+            deathDate.style.display = 'block'; deathReason.style.display = 'block';
+        } else {
+            deathDate.style.display = 'none'; deathDate.value = '';
+            deathReason.style.display = 'none'; deathReason.value = '';
+        }
+        checkSurvivalStatus();
+    }
+    function checkSurvivalStatus() {
+        let selects = document.querySelectorAll('.sf-status-dropdown');
+        let hasDied = false;
+        selects.forEach(sel => { if (sel.value === 'Died') hasDied = true; });
+        let addBtn = document.getElementById('addSurvivalBtn');
+        if (hasDied) { addBtn.style.display = 'none'; } else { addBtn.style.display = 'inline-block'; }
+    }
+    window.onload = function() { checkSurvivalStatus(); };
+
+    // Dynamic Row Builders
+    function addCoreRow() { let r = document.getElementById('coreTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="date" name="c_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="c_site[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><input type="text" name="c_desc[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td><td><select name="c_risk[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" selected disabled>Select</option><option value="Low">Low</option><option value="Intermediate">Intermediate</option><option value="High">High</option><option value="NA">NA</option></select></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
     function addTumourRow() { let r = document.getElementById('tumourTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="ts_len[]"></td><td><input type="text" name="ts_wid[]"></td><td><input type="text" name="ts_dep[]"></td><td><input type="text" name="ts_t[]"></td><td><input type="text" name="ts_desc[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
     function addLymphRow() { let r = document.getElementById('lymphTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="ln_grp[]"></td><td><input type="text" name="ln_len[]"></td><td><input type="text" name="ln_wid[]"></td><td><input type="text" name="ln_dep[]"></td><td><input type="text" name="ln_n[]"></td><td><input type="text" name="ln_desc[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
-    function addStageRow() { let r = document.getElementById('stageTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
-    function removeRow(btn) { let row = btn.parentNode.parentNode; if(row.parentNode.rows.length > 1) row.parentNode.removeChild(row); }
-
-    // Universal Date Restrictor for Disease & Staging
-    document.addEventListener('focusin', function(e) {
-        // Check if the element the user just clicked/focused on is a date input
-        if (e.target && e.target.type === 'date') {
-            // Calculate today's date adjusted for local timezone
-            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
-            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
-            
-            // Instantly apply the maximum date restriction
-            e.target.setAttribute('max', todayLocal);
-        }
-    });
+    function addStageRow() { let r = document.getElementById('stageTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="date" name="st_date[]"></td><td><input type="text" name="st_type[]" placeholder="Clinical, Pathological"></td><td><input type="text" name="st_t[]"></td><td><input type="text" name="st_n[]"></td><td><input type="text" name="st_m[]"></td><td><input type="text" name="st_d[]"></td><td><input type="text" name="st_stage[]"></td><td><input type="text" name="st_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    
+    function addProgressionRow() { 
+        let r = document.getElementById('progressionTable').getElementsByTagName('tbody')[0].insertRow(); 
+        let pt = document.getElementById('protocols_template').innerHTML; 
+        let rt = document.getElementById('rad_scans_template').innerHTML; 
+        r.innerHTML = `
+            <td><input type="date" name="dp_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><select name="dp_line[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select</option><option value="First">First</option><option value="Second">Second</option><option value="Third">Third</option></select></td>
+            <td><select name="dp_protocol[]" style="width:100%; padding:6px; border:1px solid #ccc;">${pt}</select></td>
+            <td><select name="dp_type[]" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select</option><option value="Local recurrence">Local</option><option value="Regional recurrence">Regional</option><option value="Distant metastasis">Distant</option><option value="Mets Progression">Mets Progression</option></select></td>
+            <td><select name="dp_diagnosed_by[]" onchange="toggleRadScan(this)" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select</option><option value="Clinical exam">Clinical exam</option><option value="Radiological scan">Radiological scan</option><option value="Other">Other</option></select></td>
+            <td><select name="dp_rad_scan[]" class="dp_rad_scan" style="width:100%; padding:6px; border:1px solid #ccc; display:none;">${rt}</select></td>
+            <td><input type="text" name="dp_comm[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+        `; 
+    }
+    
+    function addSurvivalRow() { 
+        let r = document.getElementById('survivalTable').getElementsByTagName('tbody')[0].insertRow(); 
+        r.innerHTML = `
+            <td><input type="date" name="sf_date[]" style="width:100%; padding:6px; border:1px solid #ccc;"></td>
+            <td><select name="sf_status[]" onchange="toggleDeathFields(this)" class="sf-status-dropdown" style="width:100%; padding:6px; border:1px solid #ccc;"><option value="" disabled selected>Select</option><option value="Alive">Alive</option><option value="Died">Died</option><option value="Lost to follow up">Lost to follow up</option></select></td>
+            <td><input type="date" name="sf_death_date[]" style="width:100%; padding:6px; border:1px solid #ccc; display:none;"></td>
+            <td><select name="sf_death_reason[]" style="width:100%; padding:6px; border:1px solid #ccc; display:none;"><option value="" disabled selected>Select Reason</option><option value="Related to cancer">Related to cancer</option><option value="Not related to cancer">Not related to cancer</option></select></td>
+            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+        `; 
+    }
+    
+    function removeRow(btn) { 
+        let row = btn.parentNode.parentNode; 
+        if (row.parentNode.rows.length > 1) { 
+            row.parentNode.removeChild(row); checkSurvivalStatus();
+        } else { alert("You must keep at least one row."); } 
+    }
 </script>
 {% endblock %}

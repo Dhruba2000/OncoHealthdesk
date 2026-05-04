@@ -21,13 +21,6 @@
             </select>
         </div>
 
-        <div id="external_admin_flow" style="display: none; text-align: center; padding: 50px; border: 1px solid var(--border-color); border-radius: 8px; background: #fdfdfd;">
-            <i class="fa-solid fa-truck-medical fa-3x" style="color: #d93025; margin-bottom: 15px; opacity: 0.8;"></i>
-            <h3 style="color: #d93025; margin-bottom: 10px;">Outside Administration Selected</h3>
-            <p style="color: var(--text-muted); margin-bottom: 30px;">Detailed administration tracking and discharge summaries are disabled for sessions completed at other centers. Clicking Finalize will simply mark this cycle/day as complete so you can proceed to the next scheduled visit.</p>
-            <button type="submit" class="btn-primary" style="background: #d93025; border-color: #d93025; font-size: 1.1rem; padding: 12px 25px;"><i class="fa-solid fa-check-double"></i> Mark as Administered Outside</button>
-        </div>
-
         <div id="internal_admin_flow">
             <div id="secA" style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
                 <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid var(--border-color); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between;">
@@ -43,7 +36,7 @@
                     <div class="form-group full-width" style="background: #fff3e0; padding: 15px; border-radius: 4px; border: 1px solid #fce8b2;">
                         <strong>Protocol Pre-requisites:</strong> {{ c_proto.prerequisites or "None specified" }}<br><br>
                         <strong>Biochemistry (Last 15 Days):</strong><br>
-                        {% for b in biochem %} &bull; {{ b.date.strftime('%d-%b') }} | {{ b.test }} : {{ b.result }} <br> {% else %} <span style="color:#d93025;">No recent labs found.</span> {% endfor %}
+                        {% for b in biochem %} &bull; {{ b.date.strftime('%d-%b') if b.date else 'N/A' }} | {{ b.test }} : {{ b.result }} <br> {% else %} <span style="color:#d93025;">No recent labs found.</span> {% endfor %}
                     </div>
                     
                     <div class="form-group"><label>Fitness Confirmed? *</label><select name="fitness_confirmed" id="fitness" style="width:100%; padding:8px; border:1px solid #ccc;" required><option value="" disabled selected>Select</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
@@ -76,9 +69,9 @@
                                 <td>{{ d.type }}</td><td>{{ d.form }}</td>
                                 <td><input type="hidden" name="dp_name[]" value="{{ d.name }}"><strong>{{ d.name }}</strong></td>
                                 <td>
-                                    <input type="hidden" class="drug_mul" value="{{ d.multiplier|default('BSA') }}">
-                                    <input type="hidden" class="drug_auc" value="{{ d.auc|default('0') }}">
-                                    <span class="badge badge-grey">{{ d.multiplier|default('BSA') }}{% if d.multiplier == 'AUC' %} ({{ d.auc }}){% endif %}</span>
+                                    <input type="hidden" class="drug_mul" value="{{ d.get('multiplier', 'BSA') or 'BSA' }}">
+                                    <input type="hidden" class="drug_auc" value="{{ d.get('auc', '0') or '0' }}">
+                                    <span class="badge badge-grey">{{ d.get('multiplier', 'BSA') or 'BSA' }}{% if d.get('multiplier') == 'AUC' %} ({{ d.get('auc', '0') }}){% endif %}</span>
                                 </td>
                                 <td><input type="text" class="base_dose" value="{{ d.dose }}" style="width:60px;" readonly></td>
                                 <td><input type="text" name="dp_calc[]" class="calc_dose" style="width:70px;" readonly></td>
@@ -177,37 +170,32 @@
 
     function toggleAdminLocation() {
         let val = document.getElementById('administered_at').value;
-        if(val === 'At other centre') {
-            document.getElementById('internal_admin_flow').style.display = 'none';
-            document.getElementById('external_admin_flow').style.display = 'block';
-            document.getElementById('actual_date').required = false; document.getElementById('fitness').required = false; document.getElementById('consent').required = false; document.getElementById('w_in').required = false;
+        let isExternal = (val === 'At other centre');
+        
+        // When outside center is selected, we keep the form open for optional data entry, but remove all mandatory requirements.
+        let reqElements = ['actual_date', 'fitness', 'consent', 'w_in'];
+        reqElements.forEach(id => {
+            if(document.getElementById(id)) { document.getElementById(id).required = !isExternal; }
+        });
+        
+        // Also automatically visually unlock sections so the user doesn't get blocked by strict internal checks
+        if(isExternal) {
+            document.getElementById('secB').style.opacity = '1'; document.getElementById('secB').style.pointerEvents = 'auto';
+            document.getElementById('secC').style.opacity = '1'; document.getElementById('secC').style.pointerEvents = 'auto';
+            document.getElementById('secDE').style.opacity = '1'; document.getElementById('secDE').style.pointerEvents = 'auto';
         } else {
-            document.getElementById('internal_admin_flow').style.display = 'block';
-            document.getElementById('external_admin_flow').style.display = 'none';
-            document.getElementById('actual_date').required = true; document.getElementById('fitness').required = true; document.getElementById('consent').required = true; document.getElementById('w_in').required = true;
+            // Re-lock if changed back
+            revertTo('secA');
         }
-    }
-
-    function toggleDelay() {
-        let isD = document.getElementById('is_delayed').value;
-        let dR = document.getElementById('delay_reason');
-        if(isD === 'Yes') { dR.disabled = false; dR.required = true; } else { dR.disabled = true; dR.value = ''; dR.required = false; }
-    }
-
-    function revertTo(secId) {
-        let secs = ['secA', 'secB', 'secC', 'secDE'];
-        let targetIdx = secs.indexOf(secId);
-        for(let i=0; i<secs.length; i++) {
-            let el = document.getElementById(secs[i]);
-            if(i <= targetIdx) { el.style.opacity = '1'; el.style.pointerEvents = 'auto'; } 
-            else { el.style.opacity = '0.4'; el.style.pointerEvents = 'none'; }
-        }
-        document.getElementById('confirm_admin_cb').checked = false;
     }
 
     function unlockSec(targetSec) {
+        let isExternal = document.getElementById('administered_at').value === 'At other centre';
+        
         if(targetSec === 'secB') {
-            if(document.getElementById('fitness').value !== 'Yes' || document.getElementById('consent').value !== 'Yes') { alert("Fitness and Consent MUST be confirmed to proceed."); return; }
+            if(!isExternal && (document.getElementById('fitness').value !== 'Yes' || document.getElementById('consent').value !== 'Yes')) { 
+                alert("Fitness and Consent MUST be confirmed to proceed."); return; 
+            }
             runCalculators();
         }
         if(targetSec === 'secC') {
@@ -216,7 +204,9 @@
             for(let i=0; i<finals.length; i++) { disp[i].innerText = finals[i].value; }
         }
         if(targetSec === 'secDE') {
-            if(!document.getElementById('confirm_admin_cb').checked) { alert("You must check the confirmation box."); return; }
+            if(!isExternal && !document.getElementById('confirm_admin_cb').checked) { 
+                alert("You must check the confirmation box."); return; 
+            }
         }
         
         let prevSec = (targetSec === 'secB') ? 'secA' : (targetSec === 'secC' ? 'secB' : 'secC');
@@ -260,7 +250,7 @@
 
         for(let i=0; i<bases.length; i++) {
             let num = parseFloat(bases[i].value.replace(/[^\d.-]/g, ''));
-            let mul = muls[i] ? muls[i].value : 'BSA';
+            let mul = muls[i] ? muls[i].value.trim() : 'BSA';
             let auc = aucs[i] ? parseFloat(aucs[i].value) : 0;
 
             if(!isNaN(num)) {

@@ -21,11 +21,11 @@
     {% endif %}
 </div>
 
-<div class="panel-card" style="max-width: 1000px; margin: 0 auto;">
+<div class="panel-card" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
     <form action="{{ url_for('medical_history', patient_id=patient.id) }}" method="POST">
 
         <h3 class="form-section-title"><i class="fa-solid fa-smoking"></i> Addiction History</h3>
-        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="margin: 0;">History Present?</label>
             <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
                 <select name="has_addiction" id="has_addiction" onchange="toggleSection('addiction_details', this.value)">
@@ -34,14 +34,34 @@
                 </select>
             </div>
         </div>
-        <div id="addiction_details" class="grid-form" style="display: {% if history and history.has_addiction == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group"><label>Addiction Of</label><div class="input-with-icon"><i class="fa-solid fa-wine-glass"></i><input type="text" name="addiction_type" placeholder="e.g. Tobacco, Alcohol" value="{{ history.addiction_type or '' if history else '' }}"></div></div>
-            <div class="form-group"><label>Since Years</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="addiction_years" value="{{ history.addiction_years or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="addiction_comments" value="{{ history.addiction_comments or '' if history else '' }}"></div></div>
+        <div id="addiction_details" style="display: {% if history and history.has_addiction == 'Yes' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; overflow-x: auto;">
+            <table class="compact-table" id="addictionTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+                <thead style="background: #e8f0fe;"><tr><th>Addiction Of</th><th>Since Years</th><th>Comments</th><th></th></tr></thead>
+                <tbody>
+                    {% if record_data and record_data.addiction %}
+                        {% for a in record_data.addiction %}
+                        <tr>
+                            <td><input type="text" name="add_type[]" value="{{ a.type }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="add_years[]" value="{{ a.years }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="add_comm[]" value="{{ a.comment }}" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="add_type[]" placeholder="e.g. Tobacco, Alcohol" style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="add_years[]" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="add_comm[]" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-secondary" onclick="addAddictionRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
         </div>
 
         <h3 class="form-section-title"><i class="fa-solid fa-viruses"></i> Allergy History</h3>
-        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="margin: 0;">Known Allergies?</label>
             <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
                 <select name="has_allergy" id="has_allergy" onchange="toggleSection('allergy_details', this.value)">
@@ -50,14 +70,34 @@
                 </select>
             </div>
         </div>
-        <div id="allergy_details" class="grid-form" style="display: {% if history and history.has_allergy == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group"><label>Allergic To</label><div class="input-with-icon"><i class="fa-solid fa-triangle-exclamation"></i><input type="text" name="allergy_details" placeholder="Drugs, Food, etc." value="{{ history.allergy_details or '' if history else '' }}"></div></div>
-            <div class="form-group"><label>Since Years</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="allergy_years" value="{{ history.allergy_years or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Comments / Reactions</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="allergy_comments" value="{{ history.allergy_comments or '' if history else '' }}"></div></div>
+        <div id="allergy_details" style="display: {% if history and history.has_allergy == 'Yes' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; overflow-x: auto;">
+            <table class="compact-table" id="allergyTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+                <thead style="background: #fce8e6;"><tr><th>Allergic To</th><th>Since Years</th><th>Comments / Reactions</th><th></th></tr></thead>
+                <tbody>
+                    {% if record_data and record_data.allergy %}
+                        {% for a in record_data.allergy %}
+                        <tr>
+                            <td><input type="text" name="all_type[]" value="{{ a.type }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="all_years[]" value="{{ a.years }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="all_comm[]" value="{{ a.comment }}" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="all_type[]" placeholder="Drugs, Food, etc." style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="all_years[]" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="all_comm[]" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-secondary" onclick="addAllergyRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
         </div>
 
         <h3 class="form-section-title"><i class="fa-solid fa-people-roof"></i> Significant Family History</h3>
-        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="margin: 0;">History Present?</label>
             <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
                 <select name="has_family_history" id="has_family_history" onchange="toggleSection('family_details', this.value)">
@@ -66,14 +106,34 @@
                 </select>
             </div>
         </div>
-        <div id="family_details" class="grid-form" style="display: {% if history and history.has_family_history == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group"><label>Family History Of</label><div class="input-with-icon"><i class="fa-solid fa-dna"></i><input type="text" name="family_condition" placeholder="e.g. BRCA Mutation" value="{{ history.family_condition or '' if history else '' }}"></div></div>
-            <div class="form-group"><label>Family Member</label><div class="input-with-icon"><i class="fa-solid fa-user-group"></i><input type="text" name="family_member" placeholder="Relation (e.g. Mother)" value="{{ history.family_member or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="family_comments" value="{{ history.family_comments or '' if history else '' }}"></div></div>
+        <div id="family_details" style="display: {% if history and history.has_family_history == 'Yes' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; overflow-x: auto;">
+            <table class="compact-table" id="familyTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+                <thead style="background: #e6f4ea;"><tr><th>Family History Of</th><th>Family Member</th><th>Comments</th><th></th></tr></thead>
+                <tbody>
+                    {% if record_data and record_data.family %}
+                        {% for f in record_data.family %}
+                        <tr>
+                            <td><input type="text" name="fam_cond[]" value="{{ f.condition }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="fam_mem[]" value="{{ f.member }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="fam_comm[]" value="{{ f.comment }}" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="fam_cond[]" placeholder="e.g. BRCA Mutation" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="fam_mem[]" placeholder="Relation (e.g. Mother)" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="fam_comm[]" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-secondary" onclick="addFamilyRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
         </div>
 
         <h3 class="form-section-title"><i class="fa-solid fa-staff-snake"></i> Past Medical History</h3>
-        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="margin: 0;">Co-morbidities?</label>
             <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
                 <select name="has_past_medical" id="has_past_medical" onchange="toggleSection('medical_details', this.value)">
@@ -82,15 +142,36 @@
                 </select>
             </div>
         </div>
-        <div id="medical_details" class="grid-form" style="display: {% if history and history.has_past_medical == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group"><label>Co-morbidity</label><div class="input-with-icon"><i class="fa-solid fa-heart-pulse"></i><input type="text" name="comorbidity" placeholder="e.g. HTN, T2DM" value="{{ history.comorbidity or '' if history else '' }}"></div></div>
-            <div class="form-group"><label>Status</label><div class="input-with-icon"><i class="fa-solid fa-traffic-light"></i><select name="is_controlled"><option value="" disabled {% if not history or not history.is_controlled %}selected{% endif %}>Select</option><option value="Controlled" {% if history and history.is_controlled == 'Controlled' %}selected{% endif %}>Controlled</option><option value="Un-controlled" {% if history and history.is_controlled == 'Un-controlled' %}selected{% endif %}>Un-controlled</option></select></div></div>
-            <div class="form-group full-width"><label>Medicine Names</label><div class="input-with-icon"><i class="fa-solid fa-pills"></i><input type="text" name="medicine_names" placeholder="Current Medications" value="{{ history.medicine_names or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="medical_comments" value="{{ history.medical_comments or '' if history else '' }}"></div></div>
+        <div id="medical_details" style="display: {% if history and history.has_past_medical == 'Yes' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; overflow-x: auto;">
+            <table class="compact-table" id="medicalTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+                <thead style="background: #fce8b2;"><tr><th>Co-morbidity</th><th>Status</th><th>Medicine Names</th><th>Comments</th><th></th></tr></thead>
+                <tbody>
+                    {% if record_data and record_data.medical %}
+                        {% for m in record_data.medical %}
+                        <tr>
+                            <td><input type="text" name="med_cond[]" value="{{ m.condition }}" style="width:100%; padding:6px;"></td>
+                            <td><select name="med_stat[]" style="width:100%; padding:6px;"><option value="Controlled" {% if m.status=='Controlled' %}selected{% endif %}>Controlled</option><option value="Un-controlled" {% if m.status=='Un-controlled' %}selected{% endif %}>Un-controlled</option></select></td>
+                            <td><input type="text" name="med_drugs[]" value="{{ m.drugs }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="med_comm[]" value="{{ m.comment }}" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="med_cond[]" placeholder="e.g. HTN, T2DM" style="width:100%; padding:6px;"></td>
+                            <td><select name="med_stat[]" style="width:100%; padding:6px;"><option value="" disabled selected>Select</option><option value="Controlled">Controlled</option><option value="Un-controlled">Un-controlled</option></select></td>
+                            <td><input type="text" name="med_drugs[]" placeholder="Current Medications" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="med_comm[]" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-secondary" onclick="addMedicalRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
         </div>
 
         <h3 class="form-section-title"><i class="fa-solid fa-scalpel"></i> Past Surgical History</h3>
-        <div class="form-group" style="display: flex; align-items: center; gap: 15px;">
+        <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="margin: 0;">Prior Surgeries?</label>
             <div class="input-with-icon" style="max-width: 120px;"><i class="fa-solid fa-circle-question"></i>
                 <select name="has_past_surgical" id="has_past_surgical" onchange="toggleSection('surgical_details', this.value)">
@@ -99,36 +180,76 @@
                 </select>
             </div>
         </div>
-        <div id="surgical_details" class="grid-form" style="display: {% if history and history.has_past_surgical == 'Yes' %}grid{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div class="form-group"><label>Name of Surgery</label><div class="input-with-icon"><i class="fa-solid fa-scissors"></i><input type="text" name="surgery_name" value="{{ history.surgery_name or '' if history else '' }}"></div></div>
-            <div class="form-group"><label>Year</label><div class="input-with-icon"><i class="fa-solid fa-calendar"></i><input type="number" name="surgery_year" value="{{ history.surgery_year or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Indication</label><div class="input-with-icon"><i class="fa-solid fa-clipboard-question"></i><input type="text" name="surgery_indication" value="{{ history.surgery_indication or '' if history else '' }}"></div></div>
-            <div class="form-group full-width"><label>Comments</label><div class="input-with-icon"><i class="fa-solid fa-comment"></i><input type="text" name="surgical_comments" value="{{ history.surgical_comments or '' if history else '' }}"></div></div>
+        <div id="surgical_details" style="display: {% if history and history.has_past_surgical == 'Yes' %}block{% else %}none{% endif %}; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; overflow-x: auto;">
+            <table class="compact-table" id="surgicalTable" style="background: #fff; border: 1px solid var(--border-color); width: 100%;">
+                <thead style="background: #f3e5f5;"><tr><th>Name of Surgery</th><th>Year</th><th>Indication</th><th>Comments</th><th></th></tr></thead>
+                <tbody>
+                    {% if record_data and record_data.surgical %}
+                        {% for s in record_data.surgical %}
+                        <tr>
+                            <td><input type="text" name="surg_name[]" value="{{ s.name }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="surg_year[]" value="{{ s.year }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="surg_ind[]" value="{{ s.indication }}" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="surg_comm[]" value="{{ s.comment }}" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><input type="text" name="surg_name[]" style="width:100%; padding:6px;"></td>
+                            <td><input type="number" name="surg_year[]" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="surg_ind[]" style="width:100%; padding:6px;"></td>
+                            <td><input type="text" name="surg_comm[]" style="width:100%; padding:6px;"></td>
+                            <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <button type="button" class="btn-secondary" onclick="addSurgicalRow()" style="margin-top:10px;"><i class="fa-solid fa-plus"></i> Add Row</button>
         </div>
 
         <h3 class="form-section-title"><i class="fa-solid fa-person-breastfeeding"></i> Reproductive & Social History</h3>
-        <div class="grid-form" style="margin-bottom: 20px;">
+        <div class="grid-form" style="margin-bottom: 20px; background: #fff; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
             <div class="form-group">
                 <label>Marital Status</label>
-                <div class="input-with-icon">
-                    <i class="fa-solid fa-ring"></i>
-                    <select name="marital_status">
-                        <option value="" disabled {% if not history or not history.marital_status %}selected{% endif %}>Select</option>
-                        <option value="Married" {% if history and history.marital_status == 'Married' %}selected{% endif %}>Married</option>
-                        <option value="Unmarried" {% if history and history.marital_status == 'Unmarried' %}selected{% endif %}>Unmarried</option>
-                    </select>
-                </div>
+                <select name="marital_status" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled {% if not history or not history.marital_status %}selected{% endif %}>Select</option>
+                    <option value="Married" {% if history and history.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                    <option value="Unmarried" {% if history and history.marital_status == 'Unmarried' %}selected{% endif %}>Unmarried</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>Children</label>
-                <div class="input-with-icon">
-                    <i class="fa-solid fa-children"></i>
-                    <select name="has_children">
-                        <option value="No" {% if not history or history.has_children == 'No' %}selected{% endif %}>No</option>
-                        <option value="Yes" {% if history and history.has_children == 'Yes' %}selected{% endif %}>Yes</option>
-                    </select>
-                </div>
+                <select name="has_children" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="No" {% if not history or history.has_children == 'No' %}selected{% endif %}>No</option>
+                    <option value="Yes" {% if history and history.has_children == 'Yes' %}selected{% endif %}>Yes</option>
+                </select>
             </div>
+            
+            {% if patient.gender == 'Female' %}
+            <div class="form-group">
+                <label>Menopausal Status</label>
+                <select name="menopausal_status" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled {% if not history or not history.menopausal_status %}selected{% endif %}>Select</option>
+                    <option value="Pre-menopausal" {% if history and history.menopausal_status == 'Pre-menopausal' %}selected{% endif %}>Pre-menopausal</option>
+                    <option value="Peri-menopausal" {% if history and history.menopausal_status == 'Peri-menopausal' %}selected{% endif %}>Peri-menopausal</option>
+                    <option value="Post-menopausal" {% if history and history.menopausal_status == 'Post-menopausal' %}selected{% endif %}>Post-menopausal</option>
+                    <option value="Menopause" {% if history and history.menopausal_status == 'Menopause' %}selected{% endif %}>Menopause</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>LMP (Last Menstrual Period)</label>
+                <input type="date" name="lmp_date" value="{{ history.lmp_date if history and history.lmp_date else '' }}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="form-group full-width">
+                <label>Menstrual History</label>
+                <input type="text" name="menstrual_history" value="{{ history.menstrual_history if history and history.menstrual_history else '' }}" placeholder="Duration, cycle regularity, etc." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="form-group full-width">
+                <label>Reproductive Comments</label>
+                <input type="text" name="reproductive_comment" value="{{ history.reproductive_comment if history and history.reproductive_comment else '' }}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            {% endif %}
         </div>
 
         <div class="form-group full-width" style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid var(--border-color);">
@@ -138,8 +259,30 @@
 </div>
 
 <script>
+    // Universal Date Restrictor to prevent future dates on LMP
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.type === 'date') {
+            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            e.target.setAttribute('max', todayLocal);
+        }
+    });
+
     function toggleSection(sectionId, value) {
-        document.getElementById(sectionId).style.display = (value === 'Yes') ? 'grid' : 'none';
+        document.getElementById(sectionId).style.display = (value === 'Yes') ? 'block' : 'none';
+    }
+
+    // Dynamic Row Builders
+    function addAddictionRow() { let r = document.getElementById('addictionTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="add_type[]" placeholder="e.g. Tobacco" style="width:100%; padding:6px;"></td><td><input type="number" name="add_years[]" style="width:100%; padding:6px;"></td><td><input type="text" name="add_comm[]" style="width:100%; padding:6px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addAllergyRow() { let r = document.getElementById('allergyTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="all_type[]" placeholder="Drugs, Food" style="width:100%; padding:6px;"></td><td><input type="number" name="all_years[]" style="width:100%; padding:6px;"></td><td><input type="text" name="all_comm[]" style="width:100%; padding:6px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addFamilyRow() { let r = document.getElementById('familyTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="fam_cond[]" placeholder="Condition" style="width:100%; padding:6px;"></td><td><input type="text" name="fam_mem[]" placeholder="Relation" style="width:100%; padding:6px;"></td><td><input type="text" name="fam_comm[]" style="width:100%; padding:6px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addMedicalRow() { let r = document.getElementById('medicalTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="med_cond[]" placeholder="Co-morbidity" style="width:100%; padding:6px;"></td><td><select name="med_stat[]" style="width:100%; padding:6px;"><option value="" disabled selected>Select</option><option value="Controlled">Controlled</option><option value="Un-controlled">Un-controlled</option></select></td><td><input type="text" name="med_drugs[]" style="width:100%; padding:6px;"></td><td><input type="text" name="med_comm[]" style="width:100%; padding:6px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    function addSurgicalRow() { let r = document.getElementById('surgicalTable').getElementsByTagName('tbody')[0].insertRow(); r.innerHTML = `<td><input type="text" name="surg_name[]" style="width:100%; padding:6px;"></td><td><input type="number" name="surg_year[]" style="width:100%; padding:6px;"></td><td><input type="text" name="surg_ind[]" style="width:100%; padding:6px;"></td><td><input type="text" name="surg_comm[]" style="width:100%; padding:6px;"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 4px 8px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`; }
+    
+    function removeRow(btn) { 
+        let row = btn.parentNode.parentNode; 
+        if (row.parentNode.rows.length > 1) { row.parentNode.removeChild(row); } 
+        else { alert("You must keep at least one row."); } 
     }
 </script>
 {% endblock %}

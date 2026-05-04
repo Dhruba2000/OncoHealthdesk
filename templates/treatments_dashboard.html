@@ -20,9 +20,61 @@
         <div style="border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
             <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid var(--border-color);"><strong>Logged on: {{ rec.date.strftime('%d-%b-%Y') }} by {{ rec.author }}</strong></div>
             <div style="padding: 20px;">
-                {% if rec.chemo %}<h4>Chemotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.chemo %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
-                {% if rec.immuno %}<h4>Immunotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.immuno %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
-                {% if rec.targeted %}<h4>Targeted Therapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.targeted %}<li><strong>{{ r.drug }}</strong> ({{ r.setting }}) - {{ r.cycles }} Cycles | Response: <em>{{ r.response }}</em></li>{% endfor %}</ul>{% endif %}
+                {% if rec.chemo %}
+                <h4>Chemotherapy</h4>
+                <ul style="font-size:0.85rem; margin-bottom:15px; line-height: 1.5;">
+                    {% for r in rec.chemo %}
+                    <li style="margin-bottom: 8px;">
+                        <strong>{{ r.drug }}</strong> {% if r.protocol %}[{{ r.protocol }}]{% endif %} ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles 
+                        <br>
+                        <span style="color: #555;">Start: {{ r.start_date }} | End: {{ r.end_date }} | Response: <em>{{ r.response }}</em></span>
+                        {% if r.disc_reason %}<br><span style="color: #d93025;">Stopped: {{ r.disc_reason }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if rec.immuno %}
+                <h4>Immunotherapy</h4>
+                <ul style="font-size:0.85rem; margin-bottom:15px; line-height: 1.5;">
+                    {% for r in rec.immuno %}
+                    <li style="margin-bottom: 8px;">
+                        <strong>{{ r.drug }}</strong> {% if r.protocol %}[{{ r.protocol }}]{% endif %} ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles 
+                        <br>
+                        <span style="color: #555;">Start: {{ r.start_date }} | End: {{ r.end_date }} | Response: <em>{{ r.response }}</em></span>
+                        {% if r.disc_reason %}<br><span style="color: #d93025;">Stopped: {{ r.disc_reason }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if rec.targeted %}
+                <h4>Targeted Therapy</h4>
+                <ul style="font-size:0.85rem; margin-bottom:15px; line-height: 1.5;">
+                    {% for r in rec.targeted %}
+                    <li style="margin-bottom: 8px;">
+                        <strong>{{ r.drug }}</strong> {% if r.protocol %}[{{ r.protocol }}]{% endif %} ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles 
+                        <br>
+                        <span style="color: #555;">Start: {{ r.start_date }} | End: {{ r.end_date }} | Response: <em>{{ r.response }}</em></span>
+                        {% if r.disc_reason %}<br><span style="color: #d93025;">Stopped: {{ r.disc_reason }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                {% if rec.hormonal %}
+                <h4>Hormonal Therapy</h4>
+                <ul style="font-size:0.85rem; margin-bottom:15px; line-height: 1.5;">
+                    {% for r in rec.hormonal %}
+                    <li style="margin-bottom: 8px;">
+                        <strong>{{ r.drug }}</strong> {% if r.protocol %}[{{ r.protocol }}]{% endif %} ({{ r.setting }}, {{ r.line }} Line) - {{ r.cycles }} Cycles 
+                        <br>
+                        <span style="color: #555;">Start: {{ r.start_date }} | End: {{ r.end_date }} | Response: <em>{{ r.response }}</em></span>
+                        {% if r.disc_reason %}<br><span style="color: #d93025;">Stopped: {{ r.disc_reason }}</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
                 {% if rec.surgery %}<h4>Surgery</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.surgery %}<li><strong>{{ r.name }}</strong> ({{ r.date }}) - {{ r.intent }}, {{ r.approach }}. {% if r.file %}<a href="{{ url_for('static', filename='uploads/' + r.file) }}" target="_blank" style="color:#d93025;"><i class="fa-solid fa-file-pdf"></i> View Notes</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
                 {% if rec.radiotherapy %}<h4>Radiotherapy</h4><ul style="font-size:0.85rem; margin-bottom:15px;">{% for r in rec.radiotherapy %}<li><strong>{{ r.tech }}</strong> ({{ r.date }}) - {{ r.organs }}. Tot Dose: {{ r.tot_dose }}, Fracs: {{ r.num_frac }}. {% if r.file %}<a href="{{ url_for('static', filename='uploads/' + r.file) }}" target="_blank" style="color:#d93025;"><i class="fa-solid fa-file-pdf"></i> View Notes</a>{% endif %}</li>{% endfor %}</ul>{% endif %}
             </div>

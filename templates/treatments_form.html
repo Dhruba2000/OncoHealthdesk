@@ -33,15 +33,24 @@
                 <select name="has_{{ prefix }}" onchange="toggleSec('{{ prefix }}_div', this.value)" style="padding: 4px; border: 1px solid #ccc; border-radius: 3px;"><option value="No" selected>No</option><option value="Yes">Yes</option></select>
             </div>
             <div id="{{ prefix }}_div" style="display: none; margin-top: 15px; overflow-x: auto;">
-                <table class="compact-table" id="{{ prefix }}Table" style="border: 1px solid var(--border-color); background: #fff; min-width: 1200px;">
-                    <thead style="background: #e8f0fe;"><tr><th>Drug Name</th><th>Dose</th><th>Cycles</th><th>Start</th><th>End</th><th>Setting</th><th>Line of Therapy</th><th>Response</th><th>Comment</th><th></th></tr></thead>
+                <table class="compact-table" id="{{ prefix }}Table" style="border: 1px solid var(--border-color); background: #fff; min-width: 1500px;">
+                    <thead style="background: #e8f0fe;">
+                        <tr>
+                            <th>Drug Name</th><th>Protocol Name</th><th>Dose</th><th>Cycles</th><th>Start Date</th><th>End Date</th><th>Setting</th><th>Line of Therapy</th><th>Response</th><th>Reason for Discontinuation</th><th>Comment</th><th></th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr>
-                            <td><input type="text" name="{{ prefix }}_name[]"></td><td><input type="text" name="{{ prefix }}_dose[]"></td><td><input type="number" name="{{ prefix }}_cycles[]"></td>
-                            <td><input type="date" name="{{ prefix }}_start[]"></td><td><input type="date" name="{{ prefix }}_end[]"></td>
+                            <td><input type="text" name="{{ prefix }}_name[]"></td>
+                            <td><input type="text" name="{{ prefix }}_protocol[]"></td>
+                            <td><input type="text" name="{{ prefix }}_dose[]"></td>
+                            <td><input type="number" name="{{ prefix }}_cycles[]"></td>
+                            <td><input type="date" name="{{ prefix }}_start[]"></td>
+                            <td><input type="date" name="{{ prefix }}_end[]"></td>
                             <td><select name="{{ prefix }}_setting[]"><option value="">Select</option><option value="Adjuvant">Adjuvant</option><option value="Neo-adjuvant">Neo-adjuvant</option><option value="Definitive">Definitive [Primary]</option><option value="Concurrent">Concurrent [Radiosens]</option><option value="Palliative">Palliative</option><option value="Maintenance">Maintenance</option></select></td>
                             <td><select name="{{ prefix }}_line[]"><option value="">Select</option><option value="First">First line</option><option value="Second">Second line</option><option value="Third">Third line</option><option value="Fourth">Fourth line</option><option value="Fifth">Fifth line</option><option value="Sixth">Sixth line</option><option value="Seventh">Seventh line</option></select></td>
                             <td><select name="{{ prefix }}_resp[]"><option value="">Select</option><option value="Complete">Complete response</option><option value="Partial">Partial response</option><option value="Stable">Stable disease</option><option value="Progression">Disease progression</option></select></td>
+                            <td><input type="text" name="{{ prefix }}_disc_reason[]"></td>
                             <td><input type="text" name="{{ prefix }}_comm[]"></td>
                             <td><button type="button" class="btn-secondary" style="color: #d93025; padding: 2px 6px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
@@ -122,7 +131,7 @@
     
     function addMedRow(p) {
         let t = document.getElementById(p+'Table').getElementsByTagName('tbody')[0]; let r = t.insertRow();
-        r.innerHTML = `<td><input type="text" name="${p}_name[]"></td><td><input type="text" name="${p}_dose[]"></td><td><input type="number" name="${p}_cycles[]"></td><td><input type="date" name="${p}_start[]"></td><td><input type="date" name="${p}_end[]"></td><td><select name="${p}_setting[]"><option value="">Select</option><option value="Adjuvant">Adjuvant</option><option value="Neo-adjuvant">Neo-adjuvant</option><option value="Definitive">Definitive</option><option value="Concurrent">Concurrent</option><option value="Palliative">Palliative</option><option value="Maintenance">Maintenance</option></select></td><td><select name="${p}_line[]"><option value="">Select</option><option value="First">First line</option><option value="Second">Second line</option><option value="Third">Third line</option><option value="Fourth">Fourth line</option><option value="Fifth">Fifth line</option><option value="Sixth">Sixth line</option><option value="Seventh">Seventh line</option></select></td><td><select name="${p}_resp[]"><option value="">Select</option><option value="Complete">Complete response</option><option value="Partial">Partial response</option><option value="Stable">Stable disease</option><option value="Progression">Disease progression</option></select></td><td><input type="text" name="${p}_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 2px 6px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
+        r.innerHTML = `<td><input type="text" name="${p}_name[]"></td><td><input type="text" name="${p}_protocol[]"></td><td><input type="text" name="${p}_dose[]"></td><td><input type="number" name="${p}_cycles[]"></td><td><input type="date" name="${p}_start[]"></td><td><input type="date" name="${p}_end[]"></td><td><select name="${p}_setting[]"><option value="">Select</option><option value="Adjuvant">Adjuvant</option><option value="Neo-adjuvant">Neo-adjuvant</option><option value="Definitive">Definitive [Primary]</option><option value="Concurrent">Concurrent [Radiosens]</option><option value="Palliative">Palliative</option><option value="Maintenance">Maintenance</option></select></td><td><select name="${p}_line[]"><option value="">Select</option><option value="First">First line</option><option value="Second">Second line</option><option value="Third">Third line</option><option value="Fourth">Fourth line</option><option value="Fifth">Fifth line</option><option value="Sixth">Sixth line</option><option value="Seventh">Seventh line</option></select></td><td><select name="${p}_resp[]"><option value="">Select</option><option value="Complete">Complete response</option><option value="Partial">Partial response</option><option value="Stable">Stable disease</option><option value="Progression">Disease progression</option></select></td><td><input type="text" name="${p}_disc_reason[]"></td><td><input type="text" name="${p}_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 2px 6px;" onclick="removeRow(this)"><i class="fa-solid fa-trash"></i></button></td>`;
     }
     
     function addSurgRow() {
@@ -134,5 +143,40 @@
         let r = document.getElementById('rtTable').getElementsByTagName('tbody')[0].insertRow();
         r.innerHTML = `<td><input type="date" name="r_date[]"></td><td><select name="r_int[]"><option value="">Select</option><option value="Definitive">Definitive</option><option value="Adjuvant">Adjuvant</option><option value="Neoadjuvant">Neoadjuvant</option><option value="Palliative">Palliative</option></select></td><td><select name="r_tech[]"><option value="">Select</option><option value="3D-CRT">3D-CRT</option><option value="IMRT">IMRT</option><option value="VMAT">VMAT</option><option value="SBRT/SABR">SBRT/SABR</option><option value="Proton">Proton</option><option value="Brachytherapy">Brachytherapy</option></select></td><td><input type="text" name="r_org[]"></td><td><input type="number" name="r_plancyc[]" style="width:50px;"></td><td><input type="text" name="r_totdose[]" style="width:70px;"></td><td><select name="r_frac[]"><option value="">Select</option><option value="Standard">Standard</option><option value="Hyper">Hyperfractionated</option><option value="Hypo">Hypofractionated</option></select></td><td><input type="number" name="r_numfrac[]" style="width:50px;"></td><td><input type="number" name="r_totsess[]" style="width:50px;"></td><td><input type="text" name="r_dosefrac[]" style="width:70px;"></td><td><input type="file" name="r_file_${rIdx}"></td><td><input type="text" name="r_comm[]"></td><td><button type="button" class="btn-secondary" style="color: #d93025; padding: 2px 6px;" onclick="removeRow(this)">X</button></td>`; rIdx++;
     }
+
+    // Date Verification and Restriction Logic
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.type === 'date') {
+            let tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            let todayLocal = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            e.target.setAttribute('max', todayLocal); // No future dates across all fields
+
+            // Additional logic strictly for End Date logic linked to Start Date
+            if (e.target.name && e.target.name.includes('_end')) {
+                let row = e.target.closest('tr');
+                if (row) {
+                    let startInput = row.querySelector('input[name*="_start"]');
+                    if (startInput && startInput.value) {
+                        e.target.setAttribute('min', startInput.value); // End date must be >= Start date
+                    }
+                }
+            }
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.type === 'date' && e.target.name && e.target.name.includes('_start')) {
+            let row = e.target.closest('tr');
+            if (row) {
+                let endInput = row.querySelector('input[name*="_end"]');
+                if (endInput) {
+                    endInput.setAttribute('min', e.target.value);
+                    if (endInput.value && endInput.value < e.target.value) {
+                        endInput.value = ''; // Clear end date if it is invalid relative to a newly selected start date
+                    }
+                }
+            }
+        }
+    });
 </script>
 {% endblock %}
