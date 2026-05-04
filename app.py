@@ -43,13 +43,42 @@ class User(db.Model):
 
 class MedicalHistory(db.Model):
     id, patient_id = db.Column(db.Integer, primary_key=True), db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False, unique=True)
-    has_addiction, addiction_type, addiction_years, addiction_comments = db.Column(db.String(5), default='No'), db.Column(db.String(100)), db.Column(db.Integer), db.Column(db.Text)
-    has_allergy, allergy_details, allergy_years, allergy_comments = db.Column(db.String(5), default='No'), db.Column(db.String(100)), db.Column(db.Integer), db.Column(db.Text)
-    has_family_history, family_condition, family_member, family_comments = db.Column(db.String(5), default='No'), db.Column(db.String(100)), db.Column(db.String(50)), db.Column(db.Text)
-    has_past_medical, comorbidity, medicine_names, is_controlled, medical_comments = db.Column(db.String(5), default='No'), db.Column(db.String(200)), db.Column(db.String(200)), db.Column(db.String(20)), db.Column(db.Text)
-    has_past_surgical, surgery_name, surgery_year, surgery_indication, surgical_comments = db.Column(db.String(5), default='No'), db.Column(db.String(100)), db.Column(db.Integer), db.Column(db.String(200)), db.Column(db.Text)
-    marital_status, has_children, updated_on = db.Column(db.String(20)), db.Column(db.String(5), default='No'), db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Toggle flags for each section
+    has_addiction, has_allergy = db.Column(db.String(5), default='No'), db.Column(db.String(5), default='No')
+    has_family_history, has_past_medical, has_past_surgical = db.Column(db.String(5), default='No'), db.Column(db.String(5), default='No'), db.Column(db.String(5), default='No')
+    
+    # NEW: Text columns to store the multi-row tabular data as JSON arrays
+    addiction_data, allergy_data = db.Column(db.Text), db.Column(db.Text)
+    family_data, medical_data, surgical_data = db.Column(db.Text), db.Column(db.Text), db.Column(db.Text)
+    
+    # Reproductive & Social History
+    marital_status, has_children = db.Column(db.String(20)), db.Column(db.String(5), default='No')
+    
+    # NEW: Female-specific reproductive fields
+    menopausal_status, lmp_date = db.Column(db.String(50)), db.Column(db.String(20))
+    menstrual_history, reproductive_comment = db.Column(db.Text), db.Column(db.Text)
+    
+    updated_on = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class DiseaseProgression(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    disease_diagnosis = db.Column(db.Integer, db.ForeignKey('disease_diagnosis.id'))
+    date = db.Column(db.String(20))
+    progression_type = db.Column(db.String(100))
+    diagnosed_by = db.Column(db.String(100))
+    radiological_scan = db.Column(db.String(200))
+    treatment_line = db.Column(db.String(100))
+    comment = db.Column(db.String(500))
+
+class SurvivalFollowUp(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    disease_diagnosis = db.Column(db.Integer, db.ForeignKey('disease_diagnosis.id'))
+    follow_up_date = db.Column(db.String(20))
+    status = db.Column(db.String(50))
+    death_date = db.Column(db.String(20))
+    death_reason = db.Column(db.String(200))
+    
 class OpdConsultation(db.Model):
     id, patient_id, visit_date = db.Column(db.Integer, primary_key=True), db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False), db.Column(db.Date, nullable=False, default=date.today)
     temperature, temp_unit, pulse, bp, respiratory_rate, ecog = db.Column(db.String(10)), db.Column(db.String(5), default='°C'), db.Column(db.String(10)), db.Column(db.String(20)), db.Column(db.String(10)), db.Column(db.String(5))
@@ -76,11 +105,23 @@ class MiscellaneousRecord(db.Model):
     miscellaneous_data, created_by, created_on = db.Column(db.Text), db.Column(db.String(50)), db.Column(db.DateTime, default=datetime.utcnow)
 
 class DiseaseDiagnosis(db.Model):
-    id, patient_id, date_of_diagnosis = db.Column(db.Integer, primary_key=True), db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False), db.Column(db.Date, nullable=False, default=date.today)
-    primary_site, diagnosis_description, risk_stratification = db.Column(db.String(100)), db.Column(db.Text), db.Column(db.String(20))
-    metastasis, metastasis_organs = db.Column(db.String(10), default='Absent'), db.Column(db.Text) 
-    tumour_size_data, lymph_node_data, staging_data = db.Column(db.Text), db.Column(db.Text), db.Column(db.Text) 
-    created_by, created_on = db.Column(db.String(50)), db.Column(db.DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    # Convert core diagnosis to JSON text to allow multiple rows
+    date_of_diagnosis = db.Column(db.Date, nullable=False, default=date.today)
+    primary_site = db.Column(db.String(100))
+    diagnosis_description = db.Column(db.Text)
+    risk_stratification = db.Column(db.String(20))
+    core_diagnosis_data = db.Column(db.Text) 
+    metastasis = db.Column(db.String(10), default='Absent')
+    metastasis_organs = db.Column(db.Text) 
+    tumour_size_data = db.Column(db.Text)
+    lymph_node_data = db.Column(db.Text)
+    staging_data = db.Column(db.Text) 
+    progression_data = db.Column(db.Text) # Storing as JSON
+    survival_data = db.Column(db.Text)    # Storing as JSON
+    created_by = db.Column(db.String(50))
+    created_on = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChemoProtocol(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -343,47 +384,319 @@ def patient_overview(patient_id):
 # ==========================================
 # DISEASE, HISTORY & OPD
 # ==========================================
+import json
+from datetime import datetime
+
 @app.route('/patient/<int:patient_id>/disease_diagnosis')
 @login_required
 def disease_diagnosis(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    records = [{'id': r.id, 'date': r.date_of_diagnosis, 'site': r.primary_site, 'desc': r.diagnosis_description, 'risk': r.risk_stratification, 'metastasis': r.metastasis, 'organs': json.loads(r.metastasis_organs) if r.metastasis_organs else [], 'tumour': json.loads(r.tumour_size_data) if r.tumour_size_data else [], 'lymph': json.loads(r.lymph_node_data) if r.lymph_node_data else [], 'staging': json.loads(r.staging_data) if r.staging_data else [], 'author': r.created_by} for r in patient.disease_records]
+    records = []
+    
+    for r in patient.disease_records:
+        # Fetch related relational records
+        progressions = DiseaseProgression.query.filter_by(disease_diagnosis=patient.id).order_by(DiseaseProgression.date).all()
+        survivals = SurvivalFollowUp.query.filter_by(disease_diagnosis=patient.id).all()
+        
+        prog_data = [{'date': p.date, 'line': getattr(p, 'treatment_line', ''), 'protocol': getattr(p, 'protocol', ''), 'type': p.progression_type, 'diagnosed_by': p.diagnosed_by, 'radiological_scan': p.radiological_scan, 'comment': p.comment} for p in progressions]
+        surv_data = [{'date': s.follow_up_date, 'status': s.status, 'death_date': s.death_date, 'death_reason': s.death_reason} for s in survivals]
+        
+        # Core Diagnosis Logic (Checks for new JSON table, falls back to old columns if empty)
+        core_data = getattr(r, 'core_diagnosis_data', None)
+        if core_data:
+            core_list = json.loads(core_data)
+        else:
+            core_list = [{"date": str(r.date_of_diagnosis), "site": r.primary_site, "desc": r.diagnosis_description, "risk": r.risk_stratification}]
+
+        # ==========================================
+        # Calculate OS and PFS for Dashboard
+        # ==========================================
+        outcomes = []
+        death_date_str = next((s['death_date'] for s in surv_data if s['status'] == 'Died' and s['death_date']), None)
+        death_date = datetime.strptime(death_date_str, '%Y-%m-%d') if death_date_str else None
+        
+        for p in prog_data:
+            start_date_str = p['date']
+            if start_date_str:
+                try:
+                    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                    # Find the next progression date after this one to mark the end of PFS
+                    next_prog_str = next((nxt['date'] for nxt in prog_data if nxt['date'] and nxt['date'] > start_date_str), None)
+                    
+                    if next_prog_str:
+                        end_pfs_date = datetime.strptime(next_prog_str, '%Y-%m-%d')
+                    else:
+                        end_pfs_date = death_date
+                    
+                    pfs_months = round((end_pfs_date - start_date).days / 30.44, 1) if end_pfs_date else "Ongoing"
+                    os_months = round((death_date - start_date).days / 30.44, 1) if death_date else "Alive"
+                    
+                    outcomes.append({
+                        'line': p['line'],
+                        'protocol': p['protocol'],
+                        'pfs': pfs_months,
+                        'os': os_months
+                    })
+                except ValueError:
+                    pass # Skip calculations if dates are missing or improperly formatted
+        
+        records.append({
+            'id': r.id, 
+            'core_diagnosis': core_list,
+            'metastasis': r.metastasis, 
+            'organs': json.loads(r.metastasis_organs) if r.metastasis_organs else [], 
+            'tumour': json.loads(r.tumour_size_data) if r.tumour_size_data else [], 
+            'lymph': json.loads(r.lymph_node_data) if r.lymph_node_data else [], 
+            'staging': json.loads(r.staging_data) if r.staging_data else [], 
+            'progression': prog_data,
+            'survival': surv_data,
+            'outcomes': outcomes,
+            'created_by': r.created_by
+        })
+        
     return render_template('disease_dashboard.html', patient=patient, records=records, user=session)
 
 @app.route('/patient/<int:patient_id>/disease_diagnosis/new', methods=['GET', 'POST'])
 @login_required
 def disease_diagnosis_new(patient_id):
     patient = Patient.query.get_or_404(patient_id)
+    
+    # Fetch treatments to populate the Protocol Dropdown in Disease Progression
+    treatments = getattr(patient, 'patient_protocols', []) 
+    patient_protocols = [t.protocol.name for t in treatments if hasattr(t, 'protocol')]
+
     if request.method == 'POST':
+        # 1. Core Diagnosis Extraction (SAFE)
+        c_dates = request.form.getlist('c_date[]')
+        c_sites = request.form.getlist('c_site[]')
+        c_descs = request.form.getlist('c_desc[]')
+        c_risks = request.form.getlist('c_risk[]')
+        
+        core_list = []
+        for i in range(len(c_sites)):
+            if c_sites[i].strip():
+                core_list.append({
+                    "date": c_dates[i] if i < len(c_dates) else '', 
+                    "site": c_sites[i], 
+                    "desc": c_descs[i] if i < len(c_descs) else '', 
+                    "risk": c_risks[i] if i < len(c_risks) else ''
+                })
+
+        # 2. Metastasis
         meta_status = request.form.get('metastasis')
         meta_organs = request.form.getlist('meta_organs[]') if meta_status == 'Present' else []
+        
+        # 3. Tumour & Lymph (SAFE)
         tumour_list, lymph_list, staging_list = [], [], []
         ts_lens, ts_wids, ts_deps, ts_ts, ts_descs = request.form.getlist('ts_len[]'), request.form.getlist('ts_wid[]'), request.form.getlist('ts_dep[]'), request.form.getlist('ts_t[]'), request.form.getlist('ts_desc[]')
         for i in range(len(ts_lens)):
-            if ts_lens[i].strip() or ts_wids[i].strip(): tumour_list.append({"length": ts_lens[i], "width": ts_wids[i], "depth": ts_deps[i], "t_stage": ts_ts[i], "desc": ts_descs[i]})
+            if ts_lens[i].strip() or (i < len(ts_wids) and ts_wids[i].strip()): 
+                tumour_list.append({
+                    "length": ts_lens[i], 
+                    "width": ts_wids[i] if i < len(ts_wids) else '', 
+                    "depth": ts_deps[i] if i < len(ts_deps) else '', 
+                    "t_stage": ts_ts[i] if i < len(ts_ts) else '', 
+                    "desc": ts_descs[i] if i < len(ts_descs) else ''
+                })
+                
         ln_grps, ln_lens, ln_wids, ln_deps, ln_ns, ln_descs = request.form.getlist('ln_grp[]'), request.form.getlist('ln_len[]'), request.form.getlist('ln_wid[]'), request.form.getlist('ln_dep[]'), request.form.getlist('ln_n[]'), request.form.getlist('ln_desc[]')
         for i in range(len(ln_grps)):
-            if ln_grps[i].strip() or ln_ns[i].strip(): lymph_list.append({"group": ln_grps[i], "length": ln_lens[i], "width": ln_wids[i], "depth": ln_deps[i], "n_stage": ln_ns[i], "desc": ln_descs[i]})
-        st_dates, st_types, st_ts, st_ns, st_ms, st_stages, st_comms = request.form.getlist('st_date[]'), request.form.getlist('st_type[]'), request.form.getlist('st_t[]'), request.form.getlist('st_n[]'), request.form.getlist('st_m[]'), request.form.getlist('st_stage[]'), request.form.getlist('st_comm[]')
+            if ln_grps[i].strip() or (i < len(ln_ns) and ln_ns[i].strip()): 
+                lymph_list.append({
+                    "group": ln_grps[i], 
+                    "length": ln_lens[i] if i < len(ln_lens) else '', 
+                    "width": ln_wids[i] if i < len(ln_wids) else '', 
+                    "depth": ln_deps[i] if i < len(ln_deps) else '', 
+                    "n_stage": ln_ns[i] if i < len(ln_ns) else '', 
+                    "desc": ln_descs[i] if i < len(ln_descs) else ''
+                })
+        
+        # 4. Staging (SAFE)
+        st_dates, st_types, st_ts, st_ns, st_ms, st_ds, st_stages, st_comms = request.form.getlist('st_date[]'), request.form.getlist('st_type[]'), request.form.getlist('st_t[]'), request.form.getlist('st_n[]'), request.form.getlist('st_m[]'), request.form.getlist('st_d[]'), request.form.getlist('st_stage[]'), request.form.getlist('st_comm[]')
         for i in range(len(st_dates)):
-            if st_dates[i].strip() or st_stages[i].strip(): staging_list.append({"date": st_dates[i], "type": st_types[i], "t": st_ts[i], "n": st_ns[i], "m": st_ms[i], "stage": st_stages[i], "comment": st_comms[i]})
-        db.session.add(DiseaseDiagnosis(patient_id=patient.id, date_of_diagnosis=datetime.strptime(request.form['date_of_diagnosis'], '%Y-%m-%d').date(), primary_site=request.form.get('primary_site'), diagnosis_description=request.form.get('diagnosis_description'), risk_stratification=request.form.get('risk_stratification'), metastasis=meta_status, metastasis_organs=json.dumps(meta_organs), tumour_size_data=json.dumps(tumour_list), lymph_node_data=json.dumps(lymph_list), staging_data=json.dumps(staging_list), created_by=session.get('username')))
+            if st_dates[i].strip() or (i < len(st_stages) and st_stages[i].strip()): 
+                staging_list.append({
+                    "date": st_dates[i], 
+                    "type": st_types[i] if i < len(st_types) else '', 
+                    "t": st_ts[i] if i < len(st_ts) else '', 
+                    "n": st_ns[i] if i < len(st_ns) else '', 
+                    "m": st_ms[i] if i < len(st_ms) else '', 
+                    "d": st_ds[i] if i < len(st_ds) else '', 
+                    "stage": st_stages[i] if i < len(st_stages) else '', 
+                    "comment": st_comms[i] if i < len(st_comms) else ''
+                })
+
+        # Check if record exists for Editing, otherwise create new
+        record = DiseaseDiagnosis.query.filter_by(patient_id=patient.id).first()
+        if not record:
+            record = DiseaseDiagnosis(patient_id=patient.id)
+            db.session.add(record)
+
+        # Apply basic fields (fallback for older structure)
+        if len(c_dates) > 0 and c_dates[0]:
+            try:
+                record.date_of_diagnosis = datetime.strptime(c_dates[0], '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        record.primary_site = c_sites[0] if len(c_sites) > 0 else ''
+        record.diagnosis_description = c_descs[0] if len(c_descs) > 0 else ''
+        record.risk_stratification = c_risks[0] if len(c_risks) > 0 else ''
+        
+        # Apply JSON fields
+        record.core_diagnosis_data = json.dumps(core_list)
+        record.metastasis = meta_status
+        record.metastasis_organs = json.dumps(meta_organs)
+        record.tumour_size_data = json.dumps(tumour_list)
+        record.lymph_node_data = json.dumps(lymph_list)
+        record.staging_data = json.dumps(staging_list)
+        record.created_by = session.get('username')
+
+        # ==========================================
+        # Capture Disease Progression Arrays
+        # ==========================================
+        DiseaseProgression.query.filter_by(disease_diagnosis=patient.id).delete()
+        
+        dp_dates = request.form.getlist('dp_date[]')
+        dp_types = request.form.getlist('dp_type[]')
+        dp_diags = request.form.getlist('dp_diagnosed_by[]')
+        dp_rads = request.form.getlist('dp_rad_scan[]')
+        dp_lines = request.form.getlist('dp_line[]')
+        dp_protos = request.form.getlist('dp_protocol[]')
+        dp_comms = request.form.getlist('dp_comm[]')
+
+        for i in range(len(dp_dates)):
+            if dp_dates[i].strip() or (i < len(dp_types) and dp_types[i].strip()):
+                new_progression = DiseaseProgression(
+                    disease_diagnosis=patient.id,
+                    date=dp_dates[i],
+                    progression_type=dp_types[i] if i < len(dp_types) else '',
+                    diagnosed_by=dp_diags[i] if i < len(dp_diags) else '',
+                    radiological_scan=dp_rads[i] if i < len(dp_rads) and i < len(dp_diags) and dp_diags[i] == 'Radiological scan' else None,
+                    treatment_line=dp_lines[i] if i < len(dp_lines) else '',
+                    protocol=dp_protos[i] if i < len(dp_protos) else '', 
+                    comment=dp_comms[i] if i < len(dp_comms) else ''
+                )
+                db.session.add(new_progression)
+
+        # ==========================================
+        # Capture Survival Follow-up Arrays
+        # ==========================================
+        SurvivalFollowUp.query.filter_by(disease_diagnosis=patient.id).delete()
+        
+        sf_dates = request.form.getlist('sf_date[]')
+        sf_statuses = request.form.getlist('sf_status[]')
+        sf_death_dates = request.form.getlist('sf_death_date[]')
+        sf_death_reasons = request.form.getlist('sf_death_reason[]')
+
+        for i in range(len(sf_dates)):
+            if sf_dates[i].strip() or (i < len(sf_statuses) and sf_statuses[i].strip()):
+                is_dead = (i < len(sf_statuses) and sf_statuses[i] == 'Died')
+                new_survival = SurvivalFollowUp(
+                    disease_diagnosis=patient.id,
+                    follow_up_date=sf_dates[i],
+                    status=sf_statuses[i] if i < len(sf_statuses) else '',
+                    death_date=sf_death_dates[i] if is_dead and i < len(sf_death_dates) else None,
+                    death_reason=sf_death_reasons[i] if is_dead and i < len(sf_death_reasons) else None
+                )
+                db.session.add(new_survival)
+
         db.session.commit()
+        flash('Diagnosis record saved successfully!')
         return redirect(url_for('disease_diagnosis', patient_id=patient.id))
+
+    # --- GET LOGIC (Pre-fill Data for form) ---
+    record = DiseaseDiagnosis.query.filter_by(patient_id=patient.id).first()
+    parsed_record = None
+    if record:
+        progressions = DiseaseProgression.query.filter_by(disease_diagnosis=patient.id).all()
+        survivals = SurvivalFollowUp.query.filter_by(disease_diagnosis=patient.id).all()
+        
+        core_data = getattr(record, 'core_diagnosis_data', None)
+        if core_data:
+            core_list = json.loads(core_data)
+        else:
+            core_list = [{"date": str(record.date_of_diagnosis), "site": record.primary_site, "desc": record.diagnosis_description, "risk": record.risk_stratification}]
+
+        parsed_record = {
+            'core_diagnosis': core_list,
+            'metastasis': record.metastasis,
+            'organs': json.loads(record.metastasis_organs) if record.metastasis_organs else [],
+            'tumour': json.loads(record.tumour_size_data) if record.tumour_size_data else [],
+            'lymph': json.loads(record.lymph_node_data) if record.lymph_node_data else [],
+            'staging': json.loads(record.staging_data) if record.staging_data else [],
+            'progression': [{'date': p.date, 'line': getattr(p, 'treatment_line', ''), 'protocol': getattr(p, 'protocol', ''), 'type': p.progression_type, 'diagnosed_by': p.diagnosed_by, 'radiological_scan': p.radiological_scan, 'comment': p.comment} for p in progressions],
+            'survival': [{'date': s.follow_up_date, 'status': s.status, 'death_date': s.death_date, 'death_reason': s.death_reason} for s in survivals]
+        }
+
     path_records = [{'date': pr.record_date, 'cyto': json.loads(pr.cytology_data) if pr.cytology_data else [], 'histo': json.loads(pr.histopathology_data) if pr.histopathology_data else [], 'bio': json.loads(pr.biomarker_data) if pr.biomarker_data else []} for pr in patient.pathology_records]
     rad_records = [{'date': rr.record_date, 'data': json.loads(rr.radiology_data) if rr.radiology_data else []} for rr in patient.radiology_records]
-    return render_template('disease_form.html', patient=patient, path_records=path_records, rad_records=rad_records, user=session)
+    
+    return render_template('disease_form.html', patient=patient, record=parsed_record, path_records=path_records, rad_records=rad_records, patient_protocols=patient_protocols, user=session)
+
+import json
 
 @app.route('/patient/<int:patient_id>/medical_history', methods=['GET', 'POST'])
 @login_required
 def medical_history(patient_id):
-    patient, history = Patient.query.get_or_404(patient_id), MedicalHistory.query.filter_by(patient_id=patient_id).first()
+    patient = Patient.query.get_or_404(patient_id)
+    history = MedicalHistory.query.filter_by(patient_id=patient.id).first()
+
     if request.method == 'POST':
-        if not history: history = MedicalHistory(patient_id=patient.id); db.session.add(history)
-        history.has_addiction = request.form.get('has_addiction'); history.addiction_type = request.form.get('addiction_type')
+        if not history:
+            history = MedicalHistory(patient_id=patient.id)
+            db.session.add(history)
+
+        history.has_addiction = request.form.get('has_addiction')
+        history.has_allergy = request.form.get('has_allergy')
+        history.has_family_history = request.form.get('has_family_history')
+        history.has_past_medical = request.form.get('has_past_medical')
+        history.has_past_surgical = request.form.get('has_past_surgical')
+        history.marital_status = request.form.get('marital_status')
+        history.has_children = request.form.get('has_children')
+        
+        # Female Reproductive Fields
+        history.menopausal_status = request.form.get('menopausal_status')
+        history.lmp_date = request.form.get('lmp_date')
+        history.menstrual_history = request.form.get('menstrual_history')
+        history.reproductive_comment = request.form.get('reproductive_comment')
+
+        # Extract Tables into JSON
+        # 1. Addiction
+        a_types, a_years, a_comms = request.form.getlist('add_type[]'), request.form.getlist('add_years[]'), request.form.getlist('add_comm[]')
+        history.addiction_data = json.dumps([{"type": a_types[i], "years": a_years[i] if i < len(a_years) else '', "comment": a_comms[i] if i < len(a_comms) else ''} for i in range(len(a_types)) if a_types[i].strip()])
+
+        # 2. Allergy
+        al_types, al_years, al_comms = request.form.getlist('all_type[]'), request.form.getlist('all_years[]'), request.form.getlist('all_comm[]')
+        history.allergy_data = json.dumps([{"type": al_types[i], "years": al_years[i] if i < len(al_years) else '', "comment": al_comms[i] if i < len(al_comms) else ''} for i in range(len(al_types)) if al_types[i].strip()])
+
+        # 3. Family
+        f_conds, f_mems, f_comms = request.form.getlist('fam_cond[]'), request.form.getlist('fam_mem[]'), request.form.getlist('fam_comm[]')
+        history.family_data = json.dumps([{"condition": f_conds[i], "member": f_mems[i] if i < len(f_mems) else '', "comment": f_comms[i] if i < len(f_comms) else ''} for i in range(len(f_conds)) if f_conds[i].strip()])
+
+        # 4. Medical
+        m_conds, m_stats, m_drugs, m_comms = request.form.getlist('med_cond[]'), request.form.getlist('med_stat[]'), request.form.getlist('med_drugs[]'), request.form.getlist('med_comm[]')
+        history.medical_data = json.dumps([{"condition": m_conds[i], "status": m_stats[i] if i < len(m_stats) else '', "drugs": m_drugs[i] if i < len(m_drugs) else '', "comment": m_comms[i] if i < len(m_comms) else ''} for i in range(len(m_conds)) if m_conds[i].strip()])
+
+        # 5. Surgical
+        s_names, s_years, s_inds, s_comms = request.form.getlist('surg_name[]'), request.form.getlist('surg_year[]'), request.form.getlist('surg_ind[]'), request.form.getlist('surg_comm[]')
+        history.surgical_data = json.dumps([{"name": s_names[i], "year": s_years[i] if i < len(s_years) else '', "indication": s_inds[i] if i < len(s_inds) else '', "comment": s_comms[i] if i < len(s_comms) else ''} for i in range(len(s_names)) if s_names[i].strip()])
+
         db.session.commit()
+        flash('Medical history saved successfully!')
         return redirect(url_for('medical_history', patient_id=patient.id))
-    return render_template('medical_history.html', patient=patient, history=history, user=session)
+
+    # Parse data for GET rendering
+    record_data = None
+    if history:
+        record_data = {
+            'addiction': json.loads(history.addiction_data) if getattr(history, 'addiction_data', None) else [],
+            'allergy': json.loads(history.allergy_data) if getattr(history, 'allergy_data', None) else [],
+            'family': json.loads(history.family_data) if getattr(history, 'family_data', None) else [],
+            'medical': json.loads(history.medical_data) if getattr(history, 'medical_data', None) else [],
+            'surgical': json.loads(history.surgical_data) if getattr(history, 'surgical_data', None) else []
+        }
+
+    return render_template('medical_history.html', patient=patient, history=history, record_data=record_data, user=session)
 
 @app.route('/patient/<int:patient_id>/opd_consultations')
 @login_required
@@ -427,6 +740,80 @@ def inv_pathology_new(patient_id):
         if cyto_list or histo_list or bio_list: db.session.add(PathologyRecord(patient_id=patient.id, cytology_data=json.dumps(cyto_list), histopathology_data=json.dumps(histo_list), biomarker_data=json.dumps(bio_list), created_by=session.get('username'))); db.session.commit()
         return redirect(url_for('inv_pathology', patient_id=patient.id))
     return render_template('inv_pathology_form.html', patient=patient, user=session)
+
+import json
+
+@app.route('/patient/<int:patient_id>/investigations/pathology/edit/<int:record_id>', methods=['GET', 'POST'])
+@login_required
+def inv_pathology_edit(patient_id, record_id):
+    patient = Patient.query.get_or_404(patient_id)
+    record = PathologyRecord.query.get_or_404(record_id)
+    
+    if request.method == 'POST':
+        reg_no = patient.registration_number
+        cyto_list, histo_list, bio_list = [], [], []
+        
+        # Load existing data so we can preserve old file paths if no new file is uploaded
+        old_cyto = json.loads(record.cytology_data) if record.cytology_data else []
+        old_histo = json.loads(record.histopathology_data) if record.histopathology_data else []
+        old_bio = json.loads(record.biomarker_data) if record.biomarker_data else []
+
+        # 1. Cytology Update
+        c_dates, c_specs, c_reasons, c_micro, c_interp, c_comm = request.form.getlist('c_date[]'), request.form.getlist('c_specimen[]'), request.form.getlist('c_reason[]'), request.form.getlist('c_micro[]'), request.form.getlist('c_interp[]'), request.form.getlist('c_comm[]')
+        for i in range(len(c_dates)):
+            if c_dates[i].strip() or c_specs[i].strip():
+                # Keep old file path by default, unless a new file is uploaded
+                f_path = old_cyto[i].get('file') if i < len(old_cyto) else None
+                file_obj = request.files.get(f'c_file_{i}')
+                if file_obj and file_obj.filename != '':
+                    f_path = save_investigation_file(file_obj, 'Cytology', c_specs[i], c_dates[i], reg_no)
+                
+                cyto_list.append({"date": c_dates[i], "specimen": c_specs[i], "reason": c_reasons[i], "microscopic": c_micro[i], "interpretation": c_interp[i], "comment": c_comm[i], "file": f_path})
+
+        # 2. Histopathology Update
+        h_dates, h_types, h_sites, h_stage, h_grade, h_interp, h_comm = request.form.getlist('h_date[]'), request.form.getlist('h_type[]'), request.form.getlist('h_site[]'), request.form.getlist('h_stage[]'), request.form.getlist('h_grade[]'), request.form.getlist('h_interp[]'), request.form.getlist('h_comm[]')
+        for i in range(len(h_dates)):
+            if h_dates[i].strip() or h_types[i].strip():
+                f_path = old_histo[i].get('file') if i < len(old_histo) else None
+                file_obj = request.files.get(f'h_file_{i}')
+                if file_obj and file_obj.filename != '':
+                    f_path = save_investigation_file(file_obj, 'Histopathology', h_types[i], h_dates[i], reg_no)
+                    
+                histo_list.append({"date": h_dates[i], "type": h_types[i], "site": h_sites[i], "staging": h_stage[i], "grading": h_grade[i], "interpretation": h_interp[i], "comment": h_comm[i], "file": f_path})
+
+        # 3. Biomarker Update
+        b_dates, b_marks, b_stats, b_sub, b_vaf, b_comm = request.form.getlist('b_date[]'), request.form.getlist('b_marker[]'), request.form.getlist('b_status[]'), request.form.getlist('b_sub[]'), request.form.getlist('b_vaf[]'), request.form.getlist('b_comm[]')
+        for i in range(len(b_dates)):
+            if b_dates[i].strip() or b_marks[i].strip():
+                f_path = old_bio[i].get('file') if i < len(old_bio) else None
+                file_obj = request.files.get(f'b_file_{i}')
+                if file_obj and file_obj.filename != '':
+                    f_path = save_investigation_file(file_obj, 'Biomarker', b_marks[i], b_dates[i], reg_no)
+                    
+                bio_list.append({"date": b_dates[i], "biomarker": b_marks[i], "status": b_stats[i], "sub_biomarker": b_sub[i], "vaf": b_vaf[i], "comment": b_comm[i], "file": f_path})
+
+        # Override the old JSON data with the newly updated lists
+        record.cytology_data = json.dumps(cyto_list)
+        record.histopathology_data = json.dumps(histo_list)
+        record.biomarker_data = json.dumps(bio_list)
+        
+        db.session.commit()
+        flash('Pathology record updated successfully!')
+        return redirect(url_for('inv_pathology', patient_id=patient.id))
+
+    # Parse JSON string back into dictionaries so the HTML template can read them easily
+    parsed_record = {
+        'id': record.id,
+        'cytology': json.loads(record.cytology_data) if record.cytology_data else [],
+        'histopathology': json.loads(record.histopathology_data) if record.histopathology_data else [],
+        'biomarker': json.loads(record.biomarker_data) if record.biomarker_data else []
+    }
+    
+    # Ensure any mismatched variable names (like 'micro' vs 'microscopic') are handled safely for the template
+    for c in parsed_record['cytology']:
+        c['micro'] = c.get('microscopic', '')
+
+    return render_template('inv_pathology_form.html', patient=patient, record=parsed_record, user=session)
 
 @app.route('/patient/<int:patient_id>/investigations/radiology')
 @login_required
@@ -588,13 +975,28 @@ def protocols_edit(proto_id):
             if thm_drugs[i].strip(): thm_list.append({ "form": thm_forms[i], "drug": thm_drugs[i], "dose": thm_doses[i], "route": thm_routes[i], "frequency": thm_freqs[i], "days": thm_days[i] })
         proto.take_home_meds = json.dumps(thm_list)
         assign_days = request.form.getlist('assign_days'); proto.assign_days = json.dumps(assign_days)
+        
         day_drugs_dict = {}
         for day in assign_days:
             day_list = []
-            d_types, d_forms, d_names, d_doses, d_routes, d_dils, d_maxs, d_infs, d_notes = request.form.getlist(f'd_type_{day}[]'), request.form.getlist(f'd_form_{day}[]'), request.form.getlist(f'd_name_{day}[]'), request.form.getlist(f'd_dose_{day}[]'), request.form.getlist(f'd_route_{day}[]'), request.form.getlist(f'd_diluent_{day}[]'), request.form.getlist(f'd_max_{day}[]'), request.form.getlist(f'd_infusion_{day}[]'), request.form.getlist(f'd_note_{day}[]')
+            d_types, d_forms, d_names, d_multipliers, d_aucs, d_doses, d_routes, d_dils, d_maxs, d_infs, d_notes = request.form.getlist(f'd_type_{day}[]'), request.form.getlist(f'd_form_{day}[]'), request.form.getlist(f'd_name_{day}[]'), request.form.getlist(f'd_multiplier_{day}[]'), request.form.getlist(f'd_auc_{day}[]'), request.form.getlist(f'd_dose_{day}[]'), request.form.getlist(f'd_route_{day}[]'), request.form.getlist(f'd_diluent_{day}[]'), request.form.getlist(f'd_max_{day}[]'), request.form.getlist(f'd_infusion_{day}[]'), request.form.getlist(f'd_note_{day}[]')
             for i in range(len(d_names)):
-                if d_names[i].strip(): day_list.append({ "type": d_types[i], "form": d_forms[i], "name": d_names[i], "dose": d_doses[i], "route": d_routes[i], "diluent": d_dils[i], "max_dose": d_maxs[i], "infusion": d_infs[i], "note": d_notes[i] })
+                if d_names[i].strip(): 
+                    day_list.append({ 
+                        "type": d_types[i] if i < len(d_types) else '', 
+                        "form": d_forms[i] if i < len(d_forms) else '', 
+                        "name": d_names[i], 
+                        "multiplier": d_multipliers[i] if i < len(d_multipliers) else 'BSA', 
+                        "auc": d_aucs[i] if i < len(d_aucs) else '0', 
+                        "dose": d_doses[i] if i < len(d_doses) else '', 
+                        "route": d_routes[i] if i < len(d_routes) else '', 
+                        "diluent": d_dils[i] if i < len(d_dils) else '', 
+                        "max_dose": d_maxs[i] if i < len(d_maxs) else '', 
+                        "infusion": d_infs[i] if i < len(d_infs) else '', 
+                        "note": d_notes[i] if i < len(d_notes) else '' 
+                    })
             day_drugs_dict[day] = day_list
+            
         proto.day_drugs = json.dumps(day_drugs_dict); db.session.commit()
         return redirect(url_for('protocols_master'))
     return render_template('protocols_form.html', proto=proto, user=session)
@@ -604,6 +1006,19 @@ def protocols_edit(proto_id):
 def protocols_delete(proto_id):
     if session.get('role') != 'Admin': abort(403)
     db.session.delete(ChemoProtocol.query.get_or_404(proto_id)); db.session.commit(); return redirect(url_for('protocols_master'))
+
+@app.route('/patient/<int:patient_id>/terminate_protocol/<int:assignment_id>', methods=['POST'])
+@login_required
+def terminate_protocol(patient_id, assignment_id):
+    # Using your actual model name: PatientProtocol
+    assignment = PatientProtocol.query.get_or_404(assignment_id)
+    
+    assignment.status = 'Terminated'
+    assignment.termination_reason = request.form.get('termination_reason')
+    db.session.commit()
+    
+    flash('Protocol has been successfully terminated.')
+    return redirect(url_for('day_care', patient_id=patient_id))
 
 # ==========================================
 # DAY CARE
@@ -638,20 +1053,33 @@ def day_care(patient_id):
                     next_cycle, next_day = last_record.cycle_number + 1, assign_days[0]
                     if next_cycle > proto.num_cycles: next_cycle, next_day = None, None
 
-    return render_template('day_care_dashboard.html', patient=patient, active_protocol=active_protocol, all_protocols=all_protocols, next_cycle=next_cycle, next_day=next_day, user=session)
+    # Fetch all previous protocols that are either Completed or Terminated
+    historical_protocols = PatientProtocol.query.filter(
+        PatientProtocol.patient_id == patient.id,
+        PatientProtocol.status.in_(['Completed', 'Terminated'])
+    ).order_by(PatientProtocol.id.desc()).all()
+
+    return render_template('day_care_dashboard.html', patient=patient, active_protocol=active_protocol, all_protocols=all_protocols, next_cycle=next_cycle, next_day=next_day, historical_protocols=historical_protocols, user=session)
 
 @app.route('/patient/<int:patient_id>/day_care/session/<int:proto_id>/<int:cycle>/<int:day>', methods=['GET', 'POST'])
 @login_required
 def day_care_session(patient_id, proto_id, cycle, day):
     patient, p_proto = Patient.query.get_or_404(patient_id), PatientProtocol.query.get_or_404(proto_id)
     c_proto = p_proto.protocol
+    
     if request.method == 'POST':
-        administered_at = request.form.get('administered_at', 'BB Precision Oncocare Centre')
-        if administered_at == 'At other centre':
-            db.session.add(DayCareRecord(patient_id=patient.id, patient_protocol_id=p_proto.id, cycle_number=cycle, day_number=day, administered_at=administered_at, is_finalized=True, created_by=session.get('username')))
-            db.session.commit()
-            return redirect(url_for('day_care', patient_id=patient.id))
+        # 1. Update Protocol Status (Termination / Completion)
+        protocol_action = request.form.get('protocol_action')
+        if protocol_action == 'Completed':
+            p_proto.status = 'Completed'
+        elif protocol_action == 'Terminated':
+            p_proto.status = 'Terminated'
+            p_proto.termination_reason = request.form.get('termination_reason')
+            p_proto.termination_comments = request.form.get('termination_comments')
 
+        administered_at = request.form.get('administered_at', 'BB Precision Oncocare Centre')
+
+        # 2. Extract Data (Captures optional data even if Administered At Other Centre)
         dp_names, dp_calc, dp_pct, dp_final, dp_mod = request.form.getlist('dp_name[]'), request.form.getlist('dp_calc[]'), request.form.getlist('dp_pct[]'), request.form.getlist('dp_final[]'), request.form.getlist('dp_mod[]')
         drug_plan = [{"name": dp_names[i], "calc": dp_calc[i], "pct": dp_pct[i], "final": dp_final[i], "mod": dp_mod[i]} for i in range(len(dp_names))]
         
@@ -664,10 +1092,11 @@ def day_care_session(patient_id, proto_id, cycle, day):
         tox_names, tox_grades = request.form.getlist('tx_name[]'), request.form.getlist('tx_grade[]')
         toxicities = [{"name": tox_names[i], "grade": tox_grades[i]} for i in range(len(tox_names)) if tox_names[i].strip()]
         
+        # 3. Save Record (Safely parses dates only if they exist)
         db.session.add(DayCareRecord(
             patient_id=patient.id, patient_protocol_id=p_proto.id, cycle_number=cycle, day_number=day, administered_at=administered_at,
             planned_date=datetime.strptime(request.form['planned_date'], '%Y-%m-%d').date() if request.form.get('planned_date') else None,
-            actual_date=datetime.strptime(request.form['actual_date'], '%Y-%m-%d').date(),
+            actual_date=datetime.strptime(request.form['actual_date'], '%Y-%m-%d').date() if request.form.get('actual_date') else None,
             is_delayed=request.form.get('is_delayed'), delay_reason=request.form.get('delay_reason'),
             fitness_confirmed=request.form.get('fitness_confirmed'), consent_obtained=request.form.get('consent_obtained'),
             weight=request.form.get('weight'), bsa=request.form.get('bsa'),
@@ -676,6 +1105,7 @@ def day_care_session(patient_id, proto_id, cycle, day):
             discharge_notes=request.form.get('discharge_notes'), discharge_meds=request.form.get('discharge_meds'),
             is_finalized=True, created_by=session.get('username')
         ))
+        
         db.session.commit()
         return redirect(url_for('day_care', patient_id=patient.id))
 
@@ -706,20 +1136,50 @@ def treatments(patient_id):
     records = [{'id': r.id, 'date': r.record_date, 'author': r.created_by, 'chemo': json.loads(r.chemo_data) if r.chemo_data else [], 'immuno': json.loads(r.immuno_data) if r.immuno_data else [], 'targeted': json.loads(r.targeted_data) if r.targeted_data else [], 'hormonal': json.loads(r.hormonal_data) if r.hormonal_data else [], 'other': json.loads(r.other_med_data) if r.other_med_data else [], 'surgery': json.loads(r.surgery_data) if r.surgery_data else [], 'radiotherapy': json.loads(r.radiotherapy_data) if r.radiotherapy_data else []} for r in patient.treatment_records]
     return render_template('treatments_dashboard.html', patient=patient, records=records, user=session)
 
+import json
+
 @app.route('/patient/<int:patient_id>/treatments/new', methods=['GET', 'POST'])
 @login_required
 def treatments_new(patient_id):
     patient = Patient.query.get_or_404(patient_id)
+    
     if request.method == 'POST':
         reg_no = patient.registration_number
+        
+        # 1. Updated Helper Function for Medical Therapies
         def parse_med_table(prefix):
             lst = []
             if request.form.get(f'has_{prefix}') == 'Yes':
-                names, doses, cycles, starts, ends, sets, lines, resps, comms = request.form.getlist(f'{prefix}_name[]'), request.form.getlist(f'{prefix}_dose[]'), request.form.getlist(f'{prefix}_cycles[]'), request.form.getlist(f'{prefix}_start[]'), request.form.getlist(f'{prefix}_end[]'), request.form.getlist(f'{prefix}_setting[]'), request.form.getlist(f'{prefix}_line[]'), request.form.getlist(f'{prefix}_resp[]'), request.form.getlist(f'{prefix}_comm[]')
+                names = request.form.getlist(f'{prefix}_name[]')
+                protocols = request.form.getlist(f'{prefix}_protocol[]') # Extracted Protocol
+                doses = request.form.getlist(f'{prefix}_dose[]')
+                cycles = request.form.getlist(f'{prefix}_cycles[]')
+                starts = request.form.getlist(f'{prefix}_start[]')
+                ends = request.form.getlist(f'{prefix}_end[]')
+                sets = request.form.getlist(f'{prefix}_setting[]')
+                lines = request.form.getlist(f'{prefix}_line[]')
+                resps = request.form.getlist(f'{prefix}_resp[]')
+                disc_reasons = request.form.getlist(f'{prefix}_disc_reason[]') # Extracted Disc Reason
+                comms = request.form.getlist(f'{prefix}_comm[]')
+                
                 for i in range(len(names)):
-                    if names[i].strip(): lst.append({"drug": names[i], "dose": doses[i], "cycles": cycles[i], "start": starts[i], "end": ends[i], "setting": sets[i], "line": lines[i], "response": resps[i], "comment": comms[i]})
+                    if names[i].strip(): 
+                        lst.append({
+                            "drug": names[i], 
+                            "protocol": protocols[i] if i < len(protocols) else "",
+                            "dose": doses[i] if i < len(doses) else "", 
+                            "cycles": cycles[i] if i < len(cycles) else "", 
+                            "start_date": starts[i] if i < len(starts) else "", 
+                            "end_date": ends[i] if i < len(ends) else "", 
+                            "setting": sets[i] if i < len(sets) else "", 
+                            "line": lines[i] if i < len(lines) else "", 
+                            "response": resps[i] if i < len(resps) else "", 
+                            "disc_reason": disc_reasons[i] if i < len(disc_reasons) else "",
+                            "comment": comms[i] if i < len(comms) else ""
+                        })
             return lst
 
+        # 2. Surgery Data Extraction
         surg_list = []
         if request.form.get('has_surgery') == 'Yes':
             s_dates, s_names, s_ints, s_apps, s_convs, s_durs, s_margs, s_ebls, s_nodes, s_lvis, s_pnis, s_grads, s_dets = request.form.getlist('s_date[]'), request.form.getlist('s_name[]'), request.form.getlist('s_int[]'), request.form.getlist('s_app[]'), request.form.getlist('s_conv[]'), request.form.getlist('s_dur[]'), request.form.getlist('s_marg[]'), request.form.getlist('s_ebl[]'), request.form.getlist('s_node[]'), request.form.getlist('s_lvi[]'), request.form.getlist('s_pni[]'), request.form.getlist('s_grad[]'), request.form.getlist('s_det[]')
@@ -728,6 +1188,7 @@ def treatments_new(patient_id):
                     f_path = save_investigation_file(request.files.get(f's_file_{i}'), 'Surgery', s_names[i], s_dates[i], reg_no)
                     surg_list.append({"date": s_dates[i], "name": s_names[i], "intent": s_ints[i], "approach": s_apps[i], "conversion": s_convs[i], "duration": s_durs[i], "margin": s_margs[i], "ebl": s_ebls[i], "nodes": s_nodes[i], "lvi": s_lvis[i], "pni": s_pnis[i], "grade": s_grads[i], "details": s_dets[i], "file": f_path})
 
+        # 3. Radiotherapy Data Extraction
         rad_list = []
         if request.form.get('has_rt') == 'Yes':
             r_dates, r_ints, r_techs, r_orgs, r_plancycs, r_totdoses, r_fracs, r_numfracs, r_totsess, r_dosefracs, r_comms = request.form.getlist('r_date[]'), request.form.getlist('r_int[]'), request.form.getlist('r_tech[]'), request.form.getlist('r_org[]'), request.form.getlist('r_plancyc[]'), request.form.getlist('r_totdose[]'), request.form.getlist('r_frac[]'), request.form.getlist('r_numfrac[]'), request.form.getlist('r_totsess[]'), request.form.getlist('r_dosefrac[]'), request.form.getlist('r_comm[]')
@@ -736,9 +1197,27 @@ def treatments_new(patient_id):
                     f_path = save_investigation_file(request.files.get(f'r_file_{i}'), 'Radiotherapy', r_techs[i], r_dates[i], reg_no)
                     rad_list.append({"date": r_dates[i], "intent": r_ints[i], "tech": r_techs[i], "organs": r_orgs[i], "plan_cyc": r_plancycs[i], "tot_dose": r_totdoses[i], "frac": r_fracs[i], "num_frac": r_numfracs[i], "tot_sess": r_totsess[i], "dose_frac": r_dosefracs[i], "comment": r_comms[i], "file": f_path})
 
-        db.session.add(TreatmentRecord(patient_id=patient.id, chemo_data=json.dumps(parse_med_table('ch')), immuno_data=json.dumps(parse_med_table('im')), targeted_data=json.dumps(parse_med_table('tg')), hormonal_data=json.dumps(parse_med_table('ho')), other_med_data=json.dumps(parse_med_table('ot')), surgery_data=json.dumps(surg_list), radiotherapy_data=json.dumps(rad_list), created_by=session.get('username')))
+        # 4. Save to Database
+        db.session.add(TreatmentRecord(
+            patient_id=patient.id, 
+            chemo_data=json.dumps(parse_med_table('ch')), 
+            immuno_data=json.dumps(parse_med_table('im')), 
+            targeted_data=json.dumps(parse_med_table('tg')), 
+            hormonal_data=json.dumps(parse_med_table('ho')), 
+            other_med_data=json.dumps(parse_med_table('ot')), 
+            surgery_data=json.dumps(surg_list), 
+            radiotherapy_data=json.dumps(rad_list), 
+            created_by=session.get('username')
+        ))
+        
         db.session.commit()
         return redirect(url_for('treatments', patient_id=patient.id))
+        
+    # Fetch the user from the database using the active session
+    # (Make sure 'User' matches your actual database model name)
+    active_user = User.query.filter_by(username=session.get('username')).first()
+    
+    return render_template('treatments_form.html', patient=patient, user=active_user)
 
     dc_summary = []
     for pp in PatientProtocol.query.filter_by(patient_id=patient.id).all():
