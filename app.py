@@ -1298,7 +1298,7 @@ def tumour_board_new(patient_id):
 @login_required
 def billing():
     invoices = Invoice.query.order_by(Invoice.created_on.desc()).all()
-    return render_template('billing_dashboard.html', invoices=invoices, user=session)
+    return render_template('Billing_dashboard.html', invoices=invoices, user=session)
 
 @app.route('/api/patient/<int:patient_id>/billing_info')
 @login_required
